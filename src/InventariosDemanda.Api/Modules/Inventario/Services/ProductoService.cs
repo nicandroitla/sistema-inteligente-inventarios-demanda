@@ -35,6 +35,27 @@ public class ProductoService
         return producto;
     }
 
+    public async Task<Producto?> ActualizarAsync(int id, Producto datos)
+    {
+        var producto = await _context.Productos.FindAsync(id);
+
+        if (producto is null)
+        {
+            return null;
+        }
+
+        producto.Nombre = datos.Nombre;
+        producto.Categoria = datos.Categoria;
+        producto.StockActual = datos.StockActual;
+        producto.StockMinimo = datos.StockMinimo;
+        producto.StockMaximo = datos.StockMaximo;
+        producto.Precio = datos.Precio;
+
+        await _context.SaveChangesAsync();
+
+        return producto;
+    }
+
     public async Task<bool> EliminarAsync(int id)
     {
         var producto = await _context.Productos.FindAsync(id);

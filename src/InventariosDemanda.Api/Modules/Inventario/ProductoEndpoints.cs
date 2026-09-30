@@ -1,7 +1,5 @@
-using InventariosDemanda.Api.Modules.Inventario.Data;
 using InventariosDemanda.Api.Modules.Inventario.Models;
 using InventariosDemanda.Api.Modules.Inventario.Services;
-using Microsoft.EntityFrameworkCore;
 
 namespace InventariosDemanda.Api.Modules.Inventario;
 
@@ -33,6 +31,18 @@ public static class ProductoEndpoints
                 $"/api/productos/{nuevoProducto.Id}",
                 nuevoProducto
             );
+        });
+
+        app.MapPut("/api/productos/{id:int}", async (
+            int id,
+            Producto datos,
+            ProductoService service) =>
+        {
+            var productoActualizado = await service.ActualizarAsync(id, datos);
+
+            return productoActualizado is null
+                ? Results.NotFound(new { mensaje = "Producto no encontrado." })
+                : Results.Ok(productoActualizado);
         });
 
         app.MapDelete("/api/productos/{id:int}", async (int id, ProductoService service) =>
