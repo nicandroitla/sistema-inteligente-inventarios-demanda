@@ -13,6 +13,41 @@ public class ProductoService
         _context = context;
     }
 
+    public string? ValidarProducto(Producto producto)
+    {
+        if (string.IsNullOrWhiteSpace(producto.Nombre))
+        {
+            return "El nombre del producto es obligatorio.";
+        }
+
+        if (producto.StockActual < 0)
+        {
+            return "El stock actual no puede ser negativo.";
+        }
+
+        if (producto.StockMinimo < 0)
+        {
+            return "El stock mínimo no puede ser negativo.";
+        }
+
+        if (producto.StockMaximo < 0)
+        {
+            return "El stock máximo no puede ser negativo.";
+        }
+
+        if (producto.StockMaximo < producto.StockMinimo)
+        {
+            return "El stock máximo no puede ser menor que el stock mínimo.";
+        }
+
+        if (producto.Precio < 0)
+        {
+            return "El precio no puede ser negativo.";
+        }
+
+        return null;
+    }
+
     public async Task<List<Producto>> ObtenerTodosAsync()
     {
         return await _context.Productos

@@ -23,8 +23,17 @@ public static class ProductoEndpoints
                 : Results.Ok(producto);
         });
 
-        app.MapPost("/api/productos", async (Producto producto, ProductoService service) =>
+        app.MapPost("/api/productos", async (
+            Producto producto,
+            ProductoService service) =>
         {
+            var error = service.ValidarProducto(producto);
+
+            if (error is not null)
+            {
+                return Results.BadRequest(new { mensaje = error });
+            }
+
             var nuevoProducto = await service.CrearAsync(producto);
 
             return Results.Created(
@@ -38,6 +47,13 @@ public static class ProductoEndpoints
             Producto datos,
             ProductoService service) =>
         {
+            var error = service.ValidarProducto(datos);
+
+            if (error is not null)
+            {
+                return Results.BadRequest(new { mensaje = error });
+            }
+
             var productoActualizado = await service.ActualizarAsync(id, datos);
 
             return productoActualizado is null
@@ -45,7 +61,9 @@ public static class ProductoEndpoints
                 : Results.Ok(productoActualizado);
         });
 
-        app.MapDelete("/api/productos/{id:int}", async (int id, ProductoService service) =>
+        app.MapDelete("/api/productos/{id:int}", async (
+            int id,
+            ProductoService service) =>
         {
             var eliminado = await service.EliminarAsync(id);
 
