@@ -1,3 +1,4 @@
+using InventariosDemanda.Api.Modules.Dashboard;
 using InventariosDemanda.Api.Modules.Inventario;
 using InventariosDemanda.Api.Modules.Inventario.Data;
 using InventariosDemanda.Api.Modules.Inventario.Services;
@@ -11,6 +12,7 @@ builder.Services.AddDbContext<InventariosDbContext>(options =>
     ));
 
 builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddOpenApi();
 
@@ -24,5 +26,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapProductoEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();
