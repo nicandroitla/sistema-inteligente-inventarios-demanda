@@ -1,0 +1,431 @@
+﻿@page
+@{
+    ViewData["Title"] = "Movimientos de inventario";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">Movimientos de inventario</h1>
+            <p class="text-secondary mb-0">
+                Registra entradas y salidas y consulta el historial.
+            </p>
+        </div>
+    </div>
+
+    <div id="mensaje" class="alert d-none" role="alert"></div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Productos disponibles</p>
+                    <h2 id="totalProductos" class="h3 mb-0">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Movimientos registrados</p>
+                    <h2 id="totalMovimientos" class="h3 mb-0">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0">Registrar movimiento</h2>
+        </div>
+
+        <div class="card-body">
+            <form id="formularioMovimiento">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="productoId" class="form-label">
+                            Producto
+                        </label>
+
+                        <select id="productoId" class="form-select" required>
+                            <option value="">Cargando productos...</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="tipo" class="form-label">
+                            Tipo de movimiento
+                        </label>
+
+                        <select id="tipo" class="form-select" required>
+                            <option value="ENTRADA">Entrada</option>
+                            <option value="SALIDA">Salida</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="cantidad" class="form-label">
+                            Cantidad
+                        </label>
+
+                        <input id="cantidad"
+                               type="number"
+                               class="form-control"
+                               min="1"
+                               step="1"
+                               required />
+                    </div>
+
+                    <div class="col-12">
+                        <label for="descripcion" class="form-label">
+                            Descripción
+                        </label>
+
+                        <input id="descripcion"
+                               type="text"
+                               class="form-control"
+                               maxlength="250"
+                               placeholder="Motivo del movimiento (opcional)" />
+                    </div>
+
+                    <div class="col-12">
+                        <button id="botonGuardar"
+                                type="submit"
+                                class="btn btn-primary">
+                            Registrar movimiento
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h2 class="h5 mb-0">Historial de movimientos</h2>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Tipo</th>
+                            <th>Cantidad</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaMovimientos">
+                        <tr>
+                            <td colspan="7" class="text-center text-secondary">
+                                Cargando movimientos...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const apiProductos = "http://localhost:5014/api/productos";
+        const apiMovimientos = "http://localhost:5014/api/movimientos";
+
+        const formulario = document.getElementById("formularioMovimiento");
+        const botonGuardar = document.getElementById("botonGuardar");
+
+        function mostrarMensaje(texto, tipo) {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.textContent = texto;
+            mensaje.className = `alert alert-${tipo}`;
+        }
+
+        function ocultarMensaje() {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.textContent = "";
+            mensaje.className = "alert d-none";
+        }
+
+        // Cargar productos disponibles
+        async function cargarProductos() {
+            const respuesta = await fetch(apiProductos);
+
+            if (!respuesta.ok) {
+                throw new Error("No se pudieron consultar los productos.");
+            }
+
+            const resultado = await respuesta.json();
+
+            const productos = Array.isArray(resultado)
+                ? resultado
+                : resultado.value ?? [];
+
+            const selector = document.getElementById("productoId");
+            selector.replaceChildren();
+
+            const inicial = document.createElement("option");
+            inicial.value = "";
+            inicial.textContent = "Selecciona un producto";
+            selector.appendChild(inicial);
+
+            productos.forEach(producto => {
+                const opcion = document.createElement("option");
+                opcion.value = producto.id;
+                opcion.textContent =
+                    `${producto.nombre} — Stock: ${producto.stockActual}`;
+
+                selector.appendChild(opcion);
+            });
+
+            document.getElementById("totalProductos").textContent =
+                productos.length;
+        }
+
+        // Cargar historial de movimientos
+        async function cargarMovimientos() {
+            const respuesta = await fetch(apiMovimientos);
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    "No se pudo consultar el historial de movimientos."
+                );
+            }
+
+            const resultado = await respuesta.json();
+
+            const movimientos = Array.isArray(resultado)
+                ? resultado
+                : resultado.value ?? [];
+
+            const tabla = document.getElementById("tablaMovimientos");
+
+            tabla.replaceChildren();
+
+            document.getElementById("totalMovimientos").textContent =
+                movimientos.length;
+
+            if (movimientos.length === 0) {
+                const fila = tabla.insertRow();
+                const celda = fila.insertCell();
+
+                celda.colSpan = 7;
+                celda.className = "text-center text-secondary";
+                celda.textContent =
+                    "Todavía no hay movimientos registrados.";
+
+                return;
+            }
+
+            movimientos.forEach(movimiento => {
+                const fila = tabla.insertRow();
+
+                const valores = [
+                    movimiento.id,
+                    movimiento.fecha
+                        ? new Date(movimiento.fecha).toLocaleString()
+                        : "Sin fecha",
+                    movimiento.producto?.nombre ??
+                        `Producto ${movimiento.productoId}`,
+                    movimiento.tipo,
+                    movimiento.cantidad,
+                    movimiento.descripcion || "Sin descripción"
+                ];
+
+                valores.forEach((valor, indice) => {
+                    const celda = fila.insertCell();
+
+                    celda.textContent = valor ?? "";
+
+                    if (indice === 3) {
+                        celda.className =
+                            String(movimiento.tipo).toUpperCase() === "ENTRADA"
+                                ? "text-success fw-semibold"
+                                : "text-danger fw-semibold";
+                    }
+                });
+
+                const celdaAcciones = fila.insertCell();
+                celdaAcciones.className = "text-end";
+
+                const botonEliminar = document.createElement("button");
+
+                botonEliminar.type = "button";
+                botonEliminar.className =
+                    "btn btn-outline-danger btn-sm";
+                botonEliminar.textContent = "Eliminar";
+
+                botonEliminar.addEventListener("click", () => {
+                    eliminarMovimiento(movimiento.id, botonEliminar);
+                });
+
+                celdaAcciones.appendChild(botonEliminar);
+            });
+        }
+
+        // Actualizar productos e historial
+        async function cargarDatos() {
+            try {
+                await Promise.all([
+                    cargarProductos(),
+                    cargarMovimientos()
+                ]);
+            } catch (error) {
+                mostrarMensaje(
+                    error.message +
+                    " Verifica que la API esté ejecutándose.",
+                    "danger"
+                );
+            }
+        }
+
+        // Eliminar un movimiento
+        async function eliminarMovimiento(id, boton) {
+            if (!confirm(
+                `¿Eliminar el movimiento #${id}? Esta acción no se puede deshacer.`
+            )) {
+                return;
+            }
+
+            ocultarMensaje();
+
+            boton.disabled = true;
+            boton.textContent = "Eliminando...";
+
+            try {
+                const respuesta = await fetch(
+                    `${apiMovimientos}/${id}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                const texto = await respuesta.text();
+
+                let resultado = {};
+
+                try {
+                    resultado = texto ? JSON.parse(texto) : {};
+                } catch {
+                    resultado = {};
+                }
+
+                if (!respuesta.ok) {
+                    throw new Error(
+                        resultado.mensaje ||
+                        resultado.message ||
+                        resultado.detail ||
+                        `No se pudo eliminar el movimiento (HTTP ${respuesta.status}).`
+                    );
+                }
+
+                await cargarDatos();
+
+                mostrarMensaje(
+                    resultado.mensaje ||
+                    "Movimiento eliminado correctamente.",
+                    "success"
+                );
+            } catch (error) {
+                mostrarMensaje(error.message, "danger");
+
+                boton.disabled = false;
+                boton.textContent = "Eliminar";
+            }
+        }
+
+        // Registrar una entrada o salida
+        formulario.addEventListener("submit", async evento => {
+            evento.preventDefault();
+
+            ocultarMensaje();
+
+            const cantidad = Number(
+                document.getElementById("cantidad").value
+            );
+
+            const productoId = Number(
+                document.getElementById("productoId").value
+            );
+
+            if (
+                !Number.isInteger(cantidad) ||
+                cantidad <= 0 ||
+                productoId <= 0
+            ) {
+                mostrarMensaje(
+                    "Selecciona un producto e introduce una cantidad válida.",
+                    "warning"
+                );
+
+                return;
+            }
+
+            const datos = {
+                productoId,
+                tipo: document.getElementById("tipo").value,
+                cantidad,
+                descripcion:
+                    document.getElementById("descripcion").value.trim()
+            };
+
+            botonGuardar.disabled = true;
+            botonGuardar.textContent = "Registrando...";
+
+            try {
+                const respuesta = await fetch(apiMovimientos, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(datos)
+                });
+
+                const texto = await respuesta.text();
+
+                let resultado = {};
+
+                try {
+                    resultado = texto ? JSON.parse(texto) : {};
+                } catch {
+                    resultado = {};
+                }
+
+                if (!respuesta.ok) {
+                    throw new Error(
+                        resultado.mensaje ||
+                        resultado.message ||
+                        resultado.detail ||
+                        resultado.title ||
+                        texto ||
+                        `No fue posible registrar el movimiento (HTTP ${respuesta.status}).`
+                    );
+                }
+
+                formulario.reset();
+
+                await cargarDatos();
+
+                mostrarMensaje(
+                    "Movimiento registrado correctamente.",
+                    "success"
+                );
+            } catch (error) {
+                mostrarMensaje(error.message, "danger");
+            } finally {
+                botonGuardar.disabled = false;
+                botonGuardar.textContent = "Registrar movimiento";
+            }
+        });
+
+        // Inicializar la vista
+        cargarDatos();
+    </script>
+}

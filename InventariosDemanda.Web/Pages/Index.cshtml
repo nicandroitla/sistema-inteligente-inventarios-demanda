@@ -1,0 +1,96 @@
+﻿@page
+@model IndexModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>Resumen general del estado de tu inventario.</p>
+</div>
+
+<div class="dashboard-kpi-grid">
+    <div class="dashboard-kpi-item">
+        <div class="kpi-card">
+            <div class="kpi-label">Total de productos</div>
+            <div class="kpi-value" id="totalProductos">0</div>
+            <div class="kpi-description">Productos registrados</div>
+        </div>
+    </div>
+
+    <div class="dashboard-kpi-item">
+        <div class="kpi-card">
+            <div class="kpi-label">Stock bajo</div>
+            <div class="kpi-value" id="productosStockBajo">0</div>
+            <div class="kpi-description">Requieren atención</div>
+        </div>
+    </div>
+
+    <div class="dashboard-kpi-item">
+        <div class="kpi-card">
+            <div class="kpi-label">Sin stock</div>
+            <div class="kpi-value" id="productosSinStock">0</div>
+            <div class="kpi-description">Productos agotados</div>
+        </div>
+    </div>
+
+    <div class="dashboard-kpi-item">
+        <div class="kpi-card">
+            <div class="kpi-label">Valor del inventario</div>
+            <div class="kpi-value" id="valorInventario">$0.00</div>
+            <div class="kpi-description">Valor estimado actual</div>
+        </div>
+    </div>
+</div>
+
+<div class="system-card">
+    <h5>Estado del sistema</h5>
+    <div class="system-status">
+        <span class="status-dot"></span>
+        <span id="estadoSistema">Conectando con la API...</span>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function cargarDashboard() {
+            const estado = document.getElementById("estadoSistema");
+
+            try {
+                const respuesta =
+                    await fetch("http://localhost:5014/api/dashboard");
+
+                if (!respuesta.ok) {
+                    throw new Error("No fue posible consultar la API.");
+                }
+
+                const datos = await respuesta.json();
+
+                document.getElementById("totalProductos").textContent =
+                    datos.totalProductos ?? 0;
+
+                document.getElementById("productosStockBajo").textContent =
+                    datos.productosStockBajo ?? 0;
+
+                document.getElementById("productosSinStock").textContent =
+                    datos.productosSinStock ?? 0;
+
+                document.getElementById("valorInventario").textContent =
+                    "$" + Number(datos.valorInventario ?? 0)
+                        .toLocaleString("es-DO", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                estado.textContent = "API conectada correctamente.";
+            }
+            catch (error) {
+                estado.textContent =
+                    "No fue posible conectar con la API.";
+            }
+        }
+
+        cargarDashboard();
+    </script>
+}

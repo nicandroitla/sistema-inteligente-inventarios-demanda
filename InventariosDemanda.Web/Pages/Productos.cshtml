@@ -1,0 +1,463 @@
+﻿@page
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="dashboard-header">
+    <h1>Productos</h1>
+    <p>Gestión de los productos registrados en el inventario.</p>
+</div>
+
+<div class="system-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="mb-1">Lista de productos</h5>
+            <div class="text-muted small">
+                Información actual obtenida desde la API.
+            </div>
+        </div>
+
+        <button type="button"
+                class="btn btn-primary"
+                onclick="mostrarFormulario()">
+            + Nuevo producto
+        </button>
+    </div>
+
+    <!-- Formulario -->
+    <div id="formularioProducto" style="display: none;" class="mb-4">
+        <div class="border rounded p-4">
+            <h5 id="tituloFormulario">Registrar producto</h5>
+
+            <input type="hidden" id="productoId" />
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="nombre" class="form-label">Nombre</label>
+                    <input type="text" id="nombre" class="form-control"
+                           placeholder="Nombre del producto" />
+                </div>
+
+                <div class="col-md-6">
+                    <label for="categoria" class="form-label">Categoría</label>
+                    <input type="text" id="categoria" class="form-control"
+                           placeholder="Categoría" />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="stockActual" class="form-label">Stock actual</label>
+                    <input type="number" id="stockActual" class="form-control"
+                           min="0" step="1" />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="stockMinimo" class="form-label">Stock mínimo</label>
+                    <input type="number" id="stockMinimo" class="form-control"
+                           min="0" step="1" />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="stockMaximo" class="form-label">Stock máximo</label>
+                    <input type="number" id="stockMaximo" class="form-control"
+                           min="0" step="1" />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="precio" class="form-label">Precio</label>
+                    <input type="number" id="precio" class="form-control"
+                           min="0" step="0.01" />
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="button" class="btn btn-primary"
+                        onclick="guardarProducto()">
+                    Guardar
+                </button>
+
+                <button type="button" class="btn btn-secondary ms-2"
+                        onclick="cancelarFormulario()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div id="mensaje" class="mb-3"></div>
+
+    <!-- Tabla -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                    <th>Máximo</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaProductos">
+                <tr>
+                    <td colspan="8" class="text-center text-muted">
+                        Cargando productos...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const API_URL = "http://localhost:5014/api/productos";
+
+        // Mostrar mensajes
+        function mostrarMensaje(texto, tipo) {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.replaceChildren();
+
+            const alerta = document.createElement("div");
+            alerta.className = `alert alert-${tipo}`;
+            alerta.textContent = texto;
+            mensaje.appendChild(alerta);
+        }
+
+        // Cargar productos
+        async function cargarProductos() {
+            try {
+                const respuesta = await fetch(API_URL);
+
+                if (!respuesta.ok) {
+                    throw new Error("No fue posible obtener los productos.");
+                }
+
+                // Corrección: obtener resultado y definir productos una sola vez.
+                const resultado = await respuesta.json();
+                const productos = Array.isArray(resultado)
+                    ? resultado
+                    : resultado.value ?? [];
+
+                const tabla = document.getElementById("tablaProductos");
+                tabla.replaceChildren();
+
+                if (productos.length === 0) {
+                    const fila = tabla.insertRow();
+                    const celda = fila.insertCell();
+                    celda.colSpan = 8;
+                    celda.className = "text-center text-muted";
+                    celda.textContent = "No hay productos registrados.";
+                    return;
+                }
+
+                productos.forEach(producto => {
+                    const fila = document.createElement("tr");
+
+                    const valores = [
+                        producto.id,
+                        producto.nombre ?? "",
+                        producto.categoria ?? "",
+                        producto.stockActual ?? 0,
+                        producto.stockMinimo ?? 0,
+                        producto.stockMaximo ?? 0,
+                        `$${Number(producto.precio ?? 0).toLocaleString("es-DO", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}`
+                    ];
+
+                    valores.forEach((valor, indice) => {
+                        const celda = document.createElement("td");
+
+                        if (indice === 1) {
+                            const nombre = document.createElement("strong");
+                            nombre.textContent = valor;
+                            celda.appendChild(nombre);
+                        } else {
+                            celda.textContent = valor;
+                        }
+
+                        fila.appendChild(celda);
+                    });
+
+                    const celdaAcciones = document.createElement("td");
+
+                    const botonEditar = document.createElement("button");
+                    botonEditar.type = "button";
+                    botonEditar.className =
+                        "btn btn-sm btn-outline-primary me-1";
+                    botonEditar.textContent = "Editar";
+                    botonEditar.addEventListener("click", () => {
+                        editarProducto(producto.id);
+                    });
+
+                    const botonEliminar = document.createElement("button");
+                    botonEliminar.type = "button";
+                    botonEliminar.className =
+                        "btn btn-sm btn-outline-danger";
+                    botonEliminar.textContent = "Eliminar";
+                    botonEliminar.addEventListener("click", () => {
+                        eliminarProducto(producto.id);
+                    });
+
+                    celdaAcciones.appendChild(botonEditar);
+                    celdaAcciones.appendChild(botonEliminar);
+                    fila.appendChild(celdaAcciones);
+                    tabla.appendChild(fila);
+                });
+
+            } catch (error) {
+                mostrarMensaje(
+                    "No fue posible cargar los productos. " + error.message,
+                    "danger"
+                );
+            }
+        }
+
+        // Mostrar formulario
+        function mostrarFormulario() {
+            limpiarFormulario();
+            document.getElementById("tituloFormulario").textContent =
+                "Registrar producto";
+            document.getElementById("formularioProducto").style.display =
+                "block";
+        }
+
+        // Cancelar formulario
+        function cancelarFormulario() {
+            limpiarFormulario();
+            document.getElementById("formularioProducto").style.display =
+                "none";
+        }
+
+        // Limpiar campos
+        function limpiarFormulario() {
+            document.getElementById("productoId").value = "";
+            document.getElementById("nombre").value = "";
+            document.getElementById("categoria").value = "";
+            document.getElementById("stockActual").value = "";
+            document.getElementById("stockMinimo").value = "";
+            document.getElementById("stockMaximo").value = "";
+            document.getElementById("precio").value = "";
+        }
+
+        // Guardar o actualizar producto
+        async function guardarProducto() {
+            const id = document.getElementById("productoId").value;
+            const nombre = document.getElementById("nombre").value.trim();
+            const categoria = document.getElementById("categoria").value.trim();
+
+            const stockActualTexto =
+                document.getElementById("stockActual").value;
+            const stockMinimoTexto =
+                document.getElementById("stockMinimo").value;
+            const stockMaximoTexto =
+                document.getElementById("stockMaximo").value;
+            const precioTexto =
+                document.getElementById("precio").value;
+
+            if (!nombre || !categoria) {
+                mostrarMensaje(
+                    "El nombre y la categoría son obligatorios.",
+                    "warning"
+                );
+                return;
+            }
+
+            if (
+                stockActualTexto === "" ||
+                stockMinimoTexto === "" ||
+                stockMaximoTexto === "" ||
+                precioTexto === ""
+            ) {
+                mostrarMensaje(
+                    "Completa todos los campos numéricos.",
+                    "warning"
+                );
+                return;
+            }
+
+            const stockActual = Number(stockActualTexto);
+            const stockMinimo = Number(stockMinimoTexto);
+            const stockMaximo = Number(stockMaximoTexto);
+            const precio = Number(precioTexto);
+
+            if (
+                !Number.isInteger(stockActual) ||
+                !Number.isInteger(stockMinimo) ||
+                !Number.isInteger(stockMaximo) ||
+                stockActual < 0 ||
+                stockMinimo < 0 ||
+                stockMaximo < 0 ||
+                !Number.isFinite(precio) ||
+                precio < 0
+            ) {
+                mostrarMensaje(
+                    "Introduce valores numéricos válidos y no negativos.",
+                    "warning"
+                );
+                return;
+            }
+
+            if (stockMinimo > stockMaximo) {
+                mostrarMensaje(
+                    "El stock mínimo no puede superar el stock máximo.",
+                    "warning"
+                );
+                return;
+            }
+
+            if (stockActual > stockMaximo) {
+                mostrarMensaje(
+                    "El stock actual no puede superar el stock máximo.",
+                    "warning"
+                );
+                return;
+            }
+
+            const producto = {
+                nombre: nombre,
+                categoria: categoria,
+                stockActual: stockActual,
+                stockMinimo: stockMinimo,
+                stockMaximo: stockMaximo,
+                precio: precio
+            };
+
+            try {
+                const respuesta = await fetch(
+                    id ? `${API_URL}/${id}` : API_URL,
+                    {
+                        method: id ? "PUT" : "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(producto)
+                    }
+                );
+
+                const texto = await respuesta.text();
+                let datos = {};
+
+                try {
+                    datos = texto ? JSON.parse(texto) : {};
+                } catch {
+                    datos = {};
+                }
+
+                if (!respuesta.ok) {
+                    throw new Error(
+                        datos.mensaje ||
+                        datos.message ||
+                        datos.detail ||
+                        datos.title ||
+                        texto ||
+                        "No fue posible guardar el producto."
+                    );
+                }
+
+                cancelarFormulario();
+
+                mostrarMensaje(
+                    id
+                        ? "Producto actualizado correctamente."
+                        : "Producto guardado correctamente.",
+                    "success"
+                );
+
+                await cargarProductos();
+
+            } catch (error) {
+                mostrarMensaje(error.message, "danger");
+            }
+        }
+
+        // Editar producto
+        async function editarProducto(id) {
+            try {
+                const respuesta = await fetch(`${API_URL}/${id}`);
+
+                if (!respuesta.ok) {
+                    throw new Error("No fue posible obtener el producto.");
+                }
+
+                const producto = await respuesta.json();
+
+                document.getElementById("productoId").value = producto.id;
+                document.getElementById("nombre").value = producto.nombre ?? "";
+                document.getElementById("categoria").value =
+                    producto.categoria ?? "";
+                document.getElementById("stockActual").value =
+                    producto.stockActual ?? 0;
+                document.getElementById("stockMinimo").value =
+                    producto.stockMinimo ?? 0;
+                document.getElementById("stockMaximo").value =
+                    producto.stockMaximo ?? 0;
+                document.getElementById("precio").value =
+                    producto.precio ?? 0;
+
+                document.getElementById("tituloFormulario").textContent =
+                    "Editar producto";
+                document.getElementById("formularioProducto").style.display =
+                    "block";
+
+                document.getElementById("formularioProducto").scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+            } catch (error) {
+                mostrarMensaje(error.message, "danger");
+            }
+        }
+
+        // Eliminar producto
+        async function eliminarProducto(id) {
+            if (!confirm("¿Deseas eliminar este producto?")) {
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`${API_URL}/${id}`, {
+                    method: "DELETE"
+                });
+
+                if (!respuesta.ok) {
+                    const texto = await respuesta.text();
+                    let datos = {};
+
+                    try {
+                        datos = texto ? JSON.parse(texto) : {};
+                    } catch {
+                        datos = {};
+                    }
+
+                    throw new Error(
+                        datos.mensaje ||
+                        datos.message ||
+                        datos.detail ||
+                        "No fue posible eliminar el producto."
+                    );
+                }
+
+                mostrarMensaje(
+                    "Producto eliminado correctamente.",
+                    "success"
+                );
+
+                await cargarProductos();
+
+            } catch (error) {
+                mostrarMensaje(error.message, "danger");
+            }
+        }
+
+        // Inicializar la página
+        cargarProductos();
+    </script>
+}

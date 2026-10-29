@@ -427,3 +427,26 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Respaldos locales del rediseño
+**/*.respaldo
+**/*.respaldo-*
+**/*.antes-rediseño.*
+**/*.pre-rediseño.*
+respaldo-rediseno-*/
+
+InventariosDemanda.Web/Pages/Index1.cshtml
+InventariosDemanda.Web/Pages/Index1.cshtml.cs
+
+InventariosDemanda.Web/Pages/Shared/*antes-rediseño*
+InventariosDemanda.Web/Pages/Shared/*pre-rediseño*
+InventariosDemanda.Web/wwwroot/css/*antes-rediseño*
+InventariosDemanda.Web/wwwroot/css/*pre-rediseño*
+
+InventariosDemanda.Web/Pages/Shared/_Layout.antes-rediseño.cshtml
+InventariosDemanda.Web/Pages/Shared/_Layout.pre-rediseño.cshtml
+InventariosDemanda.Web/wwwroot/css/site.antes-rediseño.css
+InventariosDemanda.Web/wwwroot/css/site.pre-rediseño.css
+
+# Respaldos del rediseño
+**/*redise*

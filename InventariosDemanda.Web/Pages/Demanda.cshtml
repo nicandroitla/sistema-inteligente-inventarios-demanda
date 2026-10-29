@@ -1,0 +1,322 @@
+﻿@page
+@{
+    ViewData["Title"] = "Análisis de demanda";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Análisis de demanda</h1>
+            <p class="text-secondary mb-0">
+                Analiza las salidas registradas y detecta necesidades de reposición.
+            </p>
+        </div>
+        <button class="btn btn-outline-primary" onclick="cargarDemanda()">
+            Actualizar análisis
+        </button>
+    </div>
+
+    <div id="mensaje" class="alert d-none" role="alert"></div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Productos analizados</p>
+                    <div id="totalProductos" class="h3 fw-bold mb-0">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Unidades de salida</p>
+                    <div id="totalSalidas" class="h3 fw-bold mb-0">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Productos con salidas</p>
+                    <div id="productosConSalidas" class="h3 fw-bold mb-0">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-secondary mb-1">Requieren reposición</p>
+                    <div id="productosBajos" class="h3 fw-bold mb-0">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-1">Demanda por producto</h2>
+            <p class="text-secondary small mb-3">
+                Clasificación basada en las unidades de salida acumuladas.
+                No representa una predicción de ventas futuras.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Salidas registradas</th>
+                            <th>Unidades retiradas</th>
+                            <th>Participación</th>
+                            <th>Nivel histórico</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDemanda">
+                        <tr>
+                            <td colspan="5" class="text-center text-secondary">
+                                Cargando análisis...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-1">Plan de reposición</h2>
+            <p class="text-secondary small mb-3">
+                La cantidad sugerida permite alcanzar el stock mínimo configurado.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Stock actual</th>
+                            <th>Stock mínimo</th>
+                            <th>Unidades sugeridas</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaReposicion">
+                        <tr>
+                            <td colspan="5" class="text-center text-secondary">
+                                Calculando reposición...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>Nota:</strong> este análisis utiliza los movimientos registrados
+        en el sistema. Las salidas de prueba también cuentan; para obtener
+        conclusiones comerciales fiables, registra datos reales y utiliza un
+        período de análisis definido.
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const apiProductos = "http://localhost:5014/api/productos";
+        const apiMovimientos = "http://localhost:5014/api/movimientos";
+
+        function mostrarError(texto) {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.textContent = texto;
+            mensaje.className = "alert alert-danger";
+        }
+
+        function clasificarDemanda(unidades, maximo) {
+            if (unidades === 0) {
+                return { texto: "Sin salidas", clase: "bg-secondary" };
+            }
+
+            if (maximo > 0 && unidades >= maximo) {
+                return { texto: "Alta", clase: "bg-danger" };
+            }
+
+            if (unidades >= 3) {
+                return { texto: "Media", clase: "bg-warning text-dark" };
+            }
+
+            return { texto: "Baja", clase: "bg-success" };
+        }
+
+        async function cargarDemanda() {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.className = "alert d-none";
+            mensaje.textContent = "";
+
+            try {
+                const [respuestaProductos, respuestaMovimientos] =
+                    await Promise.all([
+                        fetch(apiProductos),
+                        fetch(apiMovimientos)
+                    ]);
+
+                if (!respuestaProductos.ok || !respuestaMovimientos.ok) {
+                    throw new Error("No se pudieron consultar los datos de la API.");
+                }
+
+                const resultadoProductos = await respuestaProductos.json();
+                const resultadoMovimientos = await respuestaMovimientos.json();
+
+                const productos = Array.isArray(resultadoProductos)
+                    ? resultadoProductos
+                    : resultadoProductos.value ?? [];
+
+                const movimientos = Array.isArray(resultadoMovimientos)
+                    ? resultadoMovimientos
+                    : resultadoMovimientos.value ?? [];
+
+                const resumen = productos.map(producto => {
+                    const movimientosProducto = movimientos.filter(m =>
+                        Number(m.productoId) === Number(producto.id)
+                    );
+
+                    const salidas = movimientosProducto.filter(m =>
+                        String(m.tipo).toUpperCase() === "SALIDA"
+                    );
+
+                    const unidadesSalida = salidas.reduce(
+                        (total, movimiento) =>
+                            total + Number(movimiento.cantidad || 0),
+                        0
+                    );
+
+                    return {
+                        producto,
+                        cantidadSalidas: salidas.length,
+                        unidadesSalida,
+                        stock: Number(producto.stockActual || 0),
+                        minimo: Number(producto.stockMinimo || 0),
+                        maximo: Number(producto.stockMaximo || 0)
+                    };
+                });
+
+                const totalUnidades = resumen.reduce(
+                    (total, item) => total + item.unidadesSalida, 0
+                );
+
+                const conSalidas = resumen.filter(
+                    item => item.cantidadSalidas > 0
+                ).length;
+
+                const bajos = resumen.filter(
+                    item => item.stock < item.minimo
+                ).length;
+
+                document.getElementById("totalProductos").textContent =
+                    productos.length;
+
+                document.getElementById("totalSalidas").textContent =
+                    totalUnidades;
+
+                document.getElementById("productosConSalidas").textContent =
+                    conSalidas;
+
+                document.getElementById("productosBajos").textContent = bajos;
+
+                resumen.sort((a, b) =>
+                    b.unidadesSalida - a.unidadesSalida
+                );
+
+                const tablaDemanda = document.getElementById("tablaDemanda");
+                tablaDemanda.replaceChildren();
+
+                if (resumen.length === 0) {
+                    tablaDemanda.innerHTML =
+                        '<tr><td colspan="5" class="text-center">No hay productos para analizar.</td></tr>';
+                }
+
+                resumen.forEach(item => {
+                    const fila = tablaDemanda.insertRow();
+                    const participacion = totalUnidades > 0
+                        ? (item.unidadesSalida / totalUnidades) * 100
+                        : 0;
+
+                    const nivel = clasificarDemanda(
+                        item.unidadesSalida,
+                        item.maximo
+                    );
+
+                    const valores = [
+                        item.producto.nombre,
+                        item.cantidadSalidas,
+                        item.unidadesSalida
+                    ];
+
+                    valores.forEach(valor => {
+                        fila.insertCell().textContent = valor;
+                    });
+
+                    const celdaParticipacion = fila.insertCell();
+                    celdaParticipacion.textContent =
+                        participacion.toFixed(1) + "%";
+
+                    const celdaNivel = fila.insertCell();
+                    const etiqueta = document.createElement("span");
+                    etiqueta.className = "badge " + nivel.clase;
+                    etiqueta.textContent = nivel.texto;
+                    celdaNivel.appendChild(etiqueta);
+                });
+
+                const tablaReposicion =
+                    document.getElementById("tablaReposicion");
+
+                tablaReposicion.replaceChildren();
+
+                resumen
+                    .slice()
+                    .sort((a, b) =>
+                        (b.minimo - b.stock) - (a.minimo - a.stock)
+                    )
+                    .forEach(item => {
+                        const fila = tablaReposicion.insertRow();
+                        const sugeridas = Math.max(
+                            0, item.minimo - item.stock
+                        );
+
+                        const valores = [
+                            item.producto.nombre,
+                            item.stock,
+                            item.minimo,
+                            sugeridas
+                        ];
+
+                        valores.forEach(valor => {
+                            fila.insertCell().textContent = valor;
+                        });
+
+                        const celdaEstado = fila.insertCell();
+                        const etiqueta = document.createElement("span");
+
+                        if (item.stock < item.minimo) {
+                            etiqueta.className = "badge bg-danger";
+                            etiqueta.textContent = "Stock bajo";
+                        } else {
+                            etiqueta.className = "badge bg-success";
+                            etiqueta.textContent = "Stock suficiente";
+                        }
+
+                        celdaEstado.appendChild(etiqueta);
+                    });
+
+            } catch (error) {
+                mostrarError(
+                    error.message +
+                    " Comprueba que la API esté ejecutándose en el puerto 5014."
+                );
+            }
+        }
+
+        cargarDemanda();
+    </script>
+}
