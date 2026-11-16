@@ -1,0 +1,80 @@
+@page
+@model InventariosDemanda.Web.Pages.RegistroModel
+
+@{
+    ViewData["Title"] = "Crear cuenta";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="text-center mb-3">Crear cuenta</h2>
+
+                    <p class="text-center text-muted">
+                        Sistema Inteligente de Inventarios y Demanda
+                    </p>
+
+                    <form method="post">
+
+                        <div class="mb-3">
+                            <label asp-for="Correo" class="form-label">
+                                Correo electrónico
+                            </label>
+
+                            <input asp-for="Correo"
+                                   class="form-control"
+                                   type="email"
+                                   autocomplete="email"
+                                   required />
+
+                            <span asp-validation-for="Correo"
+                                  class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Contrasena" class="form-label">
+                                Contraseña
+                            </label>
+
+                            <input asp-for="Contrasena"
+                                   class="form-control"
+                                   type="password"
+                                   autocomplete="new-password"
+                                   required />
+
+                            <span asp-validation-for="Contrasena"
+                                  class="text-danger"></span>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Registrarme
+                        </button>
+
+                    </form>
+
+                    @if (!string.IsNullOrEmpty(Model.Mensaje))
+                    {
+                        <div class="alert alert-info mt-3">
+                            @Model.Mensaje
+                        </div>
+                    }
+
+                    <div class="text-center mt-3">
+                        <a href="/Login">
+                            ¿Ya tienes una cuenta? Inicia sesión
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

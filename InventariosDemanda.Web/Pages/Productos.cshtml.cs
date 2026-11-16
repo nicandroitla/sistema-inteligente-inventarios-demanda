@@ -1,6 +1,11 @@
-﻿namespace InventariosDemanda.Web.Pages
+﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace InventariosDemanda.Web.Pages
 {
-    public class Productos
+    public class ProductosModel : PageModel
     {
+        public void OnGet()
+        {
+        }
     }
 }

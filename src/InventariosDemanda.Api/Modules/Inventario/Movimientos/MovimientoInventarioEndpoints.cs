@@ -8,9 +8,12 @@ public static class MovimientoInventarioEndpoints
     public static void MapMovimientoInventarioEndpoints(
         this WebApplication app)
     {
+        // Grupo de endpoints protegido mediante JWT de Supabase.
         var grupo = app.MapGroup("/api/movimientos")
-            .WithTags("Movimientos de inventario");
+            .WithTags("Movimientos de inventario")
+            .RequireAuthorization();
 
+        // Obtener todos los movimientos registrados.
         grupo.MapGet("/", async (
             MovimientoInventarioService servicio) =>
         {
@@ -19,6 +22,7 @@ public static class MovimientoInventarioEndpoints
             return Results.Ok(movimientos);
         });
 
+        // Obtener un movimiento por su identificador.
         grupo.MapGet("/{id:int}", async (
             int id,
             MovimientoInventarioService servicio) =>
@@ -33,6 +37,7 @@ public static class MovimientoInventarioEndpoints
                 : Results.Ok(movimiento);
         });
 
+        // Registrar una entrada o salida de inventario.
         grupo.MapPost("/", async (
             MovimientoInventario movimiento,
             MovimientoInventarioService servicio) =>
@@ -54,6 +59,7 @@ public static class MovimientoInventarioEndpoints
             }
         });
 
+        // Eliminar un movimiento y revertir su efecto en el stock.
         grupo.MapDelete("/{id:int}", async (
             int id,
             MovimientoInventarioService servicio) =>

@@ -13,6 +13,7 @@
 <body>
     @{
         var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "/Index";
+        var autenticado = User.Identity?.IsAuthenticated == true;
     }
 
     <div class="app-container">
@@ -28,40 +29,63 @@
             <div class="sidebar-section-label">MENÚ PRINCIPAL</div>
 
             <nav class="sidebar-nav" aria-label="Navegación principal">
-                <a asp-page="/Index"
-                   class="sidebar-link @(currentPage == "/Index" || currentPage == "/" ? "active" : "")"
-                   aria-current="@(currentPage == "/Index" || currentPage == "/" ? "page" : null)">
-                    <span class="menu-icon" aria-hidden="true">▦</span>
-                    <span>Dashboard</span>
-                </a>
+                @if (autenticado)
+                {
+                    <a asp-page="/Index"
+                       class="sidebar-link @(currentPage == "/Index" || currentPage == "/" ? "active" : "")"
+                       aria-current="@(currentPage == "/Index" || currentPage == "/" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">▦</span>
+                        <span>Dashboard</span>
+                    </a>
 
-                <a asp-page="/Productos"
-                   class="sidebar-link @(currentPage == "/Productos" ? "active" : "")"
-                   aria-current="@(currentPage == "/Productos" ? "page" : null)">
-                    <span class="menu-icon" aria-hidden="true">▤</span>
-                    <span>Productos</span>
-                </a>
+                    <a asp-page="/Productos"
+                       class="sidebar-link @(currentPage == "/Productos" ? "active" : "")"
+                       aria-current="@(currentPage == "/Productos" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">▤</span>
+                        <span>Productos</span>
+                    </a>
 
-                <a asp-page="/Movimientos"
-                   class="sidebar-link @(currentPage == "/Movimientos" ? "active" : "")"
-                   aria-current="@(currentPage == "/Movimientos" ? "page" : null)">
-                    <span class="menu-icon" aria-hidden="true">⇄</span>
-                    <span>Movimientos</span>
-                </a>
+                    <a asp-page="/Movimientos"
+                       class="sidebar-link @(currentPage == "/Movimientos" ? "active" : "")"
+                       aria-current="@(currentPage == "/Movimientos" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">⇄</span>
+                        <span>Movimientos</span>
+                    </a>
 
-                <a asp-page="/Demanda"
-                   class="sidebar-link @(currentPage == "/Demanda" ? "active" : "")"
-                   aria-current="@(currentPage == "/Demanda" ? "page" : null)">
-                    <span class="menu-icon" aria-hidden="true">⌁</span>
-                    <span>Demanda</span>
-                </a>
+                    <a asp-page="/Demanda"
+                       class="sidebar-link @(currentPage == "/Demanda" ? "active" : "")"
+                       aria-current="@(currentPage == "/Demanda" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">⌁</span>
+                        <span>Demanda</span>
+                    </a>
 
-                <a asp-page="/Alertas"
-                   class="sidebar-link @(currentPage == "/Alertas" ? "active" : "")"
-                   aria-current="@(currentPage == "/Alertas" ? "page" : null)">
-                    <span class="menu-icon" aria-hidden="true">△</span>
-                    <span>Alertas</span>
-                </a>
+                    <a asp-page="/Alertas"
+                       class="sidebar-link @(currentPage == "/Alertas" ? "active" : "")"
+                       aria-current="@(currentPage == "/Alertas" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">△</span>
+                        <span>Alertas</span>
+                    </a>
+
+                    <a asp-page="/Logout"
+                       class="sidebar-link @(currentPage == "/Logout" ? "active" : "")">
+                        <span class="menu-icon" aria-hidden="true">⇥</span>
+                        <span>Cerrar sesión</span>
+                    </a>
+                }
+                else
+                {
+                    <a asp-page="/Login"
+                       class="sidebar-link @(currentPage == "/Login" ? "active" : "")">
+                        <span class="menu-icon" aria-hidden="true">→</span>
+                        <span>Iniciar sesión</span>
+                    </a>
+
+                    <a asp-page="/Registro"
+                       class="sidebar-link @(currentPage == "/Registro" ? "active" : "")">
+                        <span class="menu-icon" aria-hidden="true">+</span>
+                        <span>Registrarse</span>
+                    </a>
+                }
             </nav>
 
             <div class="sidebar-help">
@@ -94,7 +118,11 @@
                         <span class="status-dot"></span>
                         Entorno local
                     </span>
-                    <span class="topbar-avatar" aria-label="Perfil de Nicandro">N</span>
+
+                    @if (autenticado)
+                    {
+                        <span class="topbar-avatar" aria-label="Perfil de usuario">N</span>
+                    }
                 </div>
             </header>
 

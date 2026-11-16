@@ -11,10 +11,11 @@
 </div>
 
 <div class="dashboard-kpi-grid">
+
     <div class="dashboard-kpi-item">
         <div class="kpi-card">
             <div class="kpi-label">Total de productos</div>
-            <div class="kpi-value" id="totalProductos">0</div>
+            <div class="kpi-value" id="totalProductos">—</div>
             <div class="kpi-description">Productos registrados</div>
         </div>
     </div>
@@ -22,7 +23,7 @@
     <div class="dashboard-kpi-item">
         <div class="kpi-card">
             <div class="kpi-label">Stock bajo</div>
-            <div class="kpi-value" id="productosStockBajo">0</div>
+            <div class="kpi-value" id="productosStockBajo">—</div>
             <div class="kpi-description">Requieren atención</div>
         </div>
     </div>
@@ -30,7 +31,7 @@
     <div class="dashboard-kpi-item">
         <div class="kpi-card">
             <div class="kpi-label">Sin stock</div>
-            <div class="kpi-value" id="productosSinStock">0</div>
+            <div class="kpi-value" id="productosSinStock">—</div>
             <div class="kpi-description">Productos agotados</div>
         </div>
     </div>
@@ -38,59 +39,187 @@
     <div class="dashboard-kpi-item">
         <div class="kpi-card">
             <div class="kpi-label">Valor del inventario</div>
-            <div class="kpi-value" id="valorInventario">$0.00</div>
+            <div class="kpi-value" id="valorInventario">—</div>
             <div class="kpi-description">Valor estimado actual</div>
         </div>
     </div>
+
 </div>
 
 <div class="system-card">
     <h5>Estado del sistema</h5>
+
     <div class="system-status">
-        <span class="status-dot"></span>
-        <span id="estadoSistema">Conectando con la API...</span>
+        <span class="status-dot" id="indicadorEstado"></span>
+        <span id="estadoSistema">
+            Conectando con la API...
+        </span>
+    </div>
+
+    <div style="margin-top: 15px;">
+        <button type="button"
+                id="btnActualizarDashboard"
+                onclick="cargarDashboard()"
+                style="padding: 9px 16px; cursor: pointer;">
+            Actualizar Dashboard
+        </button>
     </div>
 </div>
 
 @section Scripts {
+
     <script>
-        async function cargarDashboard() {
+        let cargandoDashboard = false;
+
+        function actualizarEstado(mensaje, correcto) {
             const estado = document.getElementById("estadoSistema");
+            const indicador = document.getElementById("indicadorEstado");
+
+            estado.textContent = mensaje;
+
+            indicador.style.backgroundColor =
+                correcto ? "#22c55e" : "#ef4444";
+        }
+
+        function mostrarDatosNoDisponibles() {
+            document.getElementById("totalProductos").textContent = "—";
+            document.getElementById("productosStockBajo").textContent = "—";
+            document.getElementById("productosSinStock").textContent = "—";
+            document.getElementById("valorInventario").textContent = "—";
+        }
+
+        async function cargarDashboard() {
+            if (cargandoDashboard) {
+                return;
+            }
+
+            cargandoDashboard = true;
+
+            const boton =
+                document.getElementById("btnActualizarDashboard");
+
+            boton.disabled = true;
+
+            document.getElementById("estadoSistema").textContent =
+                "Consultando datos del inventario...";
 
             try {
-                const respuesta =
-                    await fetch("http://localhost:5014/api/dashboard");
+                const respuesta = await fetch("/api-proxy/dashboard", {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                });
+
+                console.log(
+                    "Dashboard - Código HTTP:",
+                    respuesta.status
+                );
+
+                if (respuesta.status === 401) {
+                    throw new Error(
+                        "Error 401: la sesión o el token de Supabase no es válido."
+                    );
+                }
+
+                if (respuesta.status === 403) {
+                    throw new Error(
+                        "Error 403: no tienes autorización para consultar el Dashboard."
+                    );
+                }
+
+                if (respuesta.status === 502) {
+                    throw new Error(
+                        "Error 502: el frontend no pudo comunicarse correctamente con la API."
+                    );
+                }
 
                 if (!respuesta.ok) {
-                    throw new Error("No fue posible consultar la API.");
+                    throw new Error(
+                        "Error HTTP " + respuesta.status +
+                        ": no fue posible obtener los datos."
+                    );
+                }
+
+                const tipoContenido =
+                    respuesta.headers.get("content-type") || "";
+
+                if (!tipoContenido.includes("application/json")) {
+                    throw new Error(
+                        "La respuesta del servidor no contiene JSON válido."
+                    );
                 }
 
                 const datos = await respuesta.json();
 
+                if (
+                    datos === null ||
+                    typeof datos !== "object" ||
+                    !("totalProductos" in datos) ||
+                    !("productosStockBajo" in datos) ||
+                    !("productosSinStock" in datos) ||
+                    !("valorInventario" in datos)
+                ) {
+                    throw new Error(
+                        "La API devolvió datos incompletos."
+                    );
+                }
+
                 document.getElementById("totalProductos").textContent =
-                    datos.totalProductos ?? 0;
+                    datos.totalProductos;
 
                 document.getElementById("productosStockBajo").textContent =
-                    datos.productosStockBajo ?? 0;
+                    datos.productosStockBajo;
 
                 document.getElementById("productosSinStock").textContent =
-                    datos.productosSinStock ?? 0;
+                    datos.productosSinStock;
+
+                const valor = Number(datos.valorInventario);
+
+                if (!Number.isFinite(valor)) {
+                    throw new Error(
+                        "El valor del inventario no es válido."
+                    );
+                }
 
                 document.getElementById("valorInventario").textContent =
-                    "$" + Number(datos.valorInventario ?? 0)
-                        .toLocaleString("es-DO", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
+                    "$" + valor.toLocaleString("es-DO", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
 
-                estado.textContent = "API conectada correctamente.";
-            }
-            catch (error) {
-                estado.textContent =
-                    "No fue posible conectar con la API.";
+                actualizarEstado(
+                    "API conectada correctamente. Datos actualizados.",
+                    true
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Dashboard - Error:",
+                    error.message
+                );
+
+                mostrarDatosNoDisponibles();
+
+                actualizarEstado(
+                    error.message ||
+                    "No fue posible conectar con la API.",
+                    false
+                );
+
+            } finally {
+
+                boton.disabled = false;
+                cargandoDashboard = false;
             }
         }
 
-        cargarDashboard();
+        document.addEventListener("DOMContentLoaded", function () {
+            cargarDashboard();
+        });
     </script>
+
 }

@@ -4,42 +4,62 @@
 }
 
 <div class="container-fluid py-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Alertas de inventario</h1>
             <p class="text-secondary mb-0">
                 Identifica productos agotados o con existencias por debajo del mínimo.
             </p>
         </div>
-        <button class="btn btn-outline-secondary" type="button" onclick="cargarAlertas()">
+
+        <button id="botonActualizar"
+                class="btn btn-outline-secondary"
+                type="button"
+                onclick="cargarAlertas()">
             Actualizar alertas
         </button>
     </div>
 
     <div id="mensaje" class="alert d-none" role="alert"></div>
 
+    <!-- INDICADORES -->
     <div class="row g-3 mb-4">
+
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4">
                     <p class="text-secondary mb-1">Productos agotados</p>
-                    <div id="totalAgotados" class="display-6 fw-bold text-danger">0</div>
+                    <div id="totalAgotados"
+                         class="display-6 fw-bold text-danger">
+                        —
+                    </div>
                 </div>
             </div>
         </div>
+
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-4">
                     <p class="text-secondary mb-1">Productos con stock bajo</p>
-                    <div id="totalStockBajo" class="display-6 fw-bold text-warning">0</div>
+                    <div id="totalStockBajo"
+                         class="display-6 fw-bold text-warning">
+                        —
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
+    <!-- PRODUCTOS AGOTADOS -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
-            <h2 class="h5 fw-bold text-danger mb-3">Productos agotados</h2>
+
+            <h2 class="h5 fw-bold text-danger mb-3">
+                Productos agotados
+            </h2>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
@@ -51,21 +71,29 @@
                             <th>Estado</th>
                         </tr>
                     </thead>
+
                     <tbody id="tablaAgotados">
                         <tr>
-                            <td colspan="5" class="text-center text-secondary">
+                            <td colspan="5"
+                                class="text-center text-secondary">
                                 Cargando datos...
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
         </div>
     </div>
 
+    <!-- PRODUCTOS CON STOCK BAJO -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-            <h2 class="h5 fw-bold text-warning mb-3">Productos con stock bajo</h2>
+
+            <h2 class="h5 fw-bold text-warning mb-3">
+                Productos con stock bajo
+            </h2>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
@@ -77,22 +105,29 @@
                             <th>Estado</th>
                         </tr>
                     </thead>
+
                     <tbody id="tablaStockBajo">
                         <tr>
-                            <td colspan="5" class="text-center text-secondary">
+                            <td colspan="5"
+                                class="text-center text-secondary">
                                 Cargando datos...
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script>
-        const apiAlertas = "http://localhost:5014/api/alertas";
+        // Proxy autenticado de Supabase.
+        const apiAlertas = "/api-proxy/alertas";
+
+        let cargando = false;
 
         function mostrarMensaje(texto, tipo) {
             const mensaje = document.getElementById("mensaje");
@@ -100,23 +135,41 @@
             mensaje.className = `alert alert-${tipo}`;
         }
 
+        function limpiarMensaje() {
+            const mensaje = document.getElementById("mensaje");
+            mensaje.textContent = "";
+            mensaje.className = "alert d-none";
+        }
+
+        function mostrarFilaVacia(tabla, texto) {
+            const fila = tabla.insertRow();
+            const celda = fila.insertCell();
+
+            celda.colSpan = 5;
+            celda.className = "text-center text-secondary";
+            celda.textContent = texto;
+        }
+
         function crearFila(producto, tabla) {
             const fila = tabla.insertRow();
 
-            [
-                producto.nombre,
-                producto.categoria,
-                producto.stockActual,
-                producto.stockMinimo,
-                producto.mensaje
-            ].forEach((valor, indice) => {
+            const valores = [
+                producto.nombre ?? producto.Nombre ?? "",
+                producto.categoria ?? producto.Categoria ?? "",
+                producto.stockActual ?? producto.StockActual ?? 0,
+                producto.stockMinimo ?? producto.StockMinimo ?? 0,
+                producto.mensaje ?? producto.Mensaje ?? ""
+            ];
+
+            valores.forEach((valor, indice) => {
                 const celda = fila.insertCell();
-                celda.textContent = valor ?? "";
+                celda.textContent = valor;
 
                 if (indice === 4) {
-                    celda.className = producto.mensaje === "Producto agotado"
-                        ? "text-danger fw-semibold"
-                        : "text-warning fw-semibold";
+                    celda.className =
+                        String(valor).toLowerCase().includes("agotado")
+                            ? "text-danger fw-semibold"
+                            : "text-warning fw-semibold";
                 }
             });
         }
@@ -125,28 +178,66 @@
             const tabla = document.getElementById(idTabla);
             tabla.replaceChildren();
 
-            if (!productos || productos.length === 0) {
-                const fila = tabla.insertRow();
-                const celda = fila.insertCell();
-                celda.colSpan = 5;
-                celda.className = "text-center text-secondary";
-                celda.textContent = mensajeVacio;
+            if (!Array.isArray(productos) || productos.length === 0) {
+                mostrarFilaVacia(tabla, mensajeVacio);
                 return;
             }
 
             productos.forEach(producto => crearFila(producto, tabla));
         }
 
+        function cambiarEstadoCarga(activo) {
+            const boton = document.getElementById("botonActualizar");
+
+            boton.disabled = activo;
+            boton.textContent = activo
+                ? "Actualizando..."
+                : "Actualizar alertas";
+        }
+
         async function cargarAlertas() {
-            const mensaje = document.getElementById("mensaje");
-            mensaje.textContent = "";
-            mensaje.className = "alert d-none";
+            if (cargando) {
+                return;
+            }
+
+            cargando = true;
+            cambiarEstadoCarga(true);
+            limpiarMensaje();
 
             try {
-                const respuesta = await fetch(apiAlertas);
+                const respuesta = await fetch(apiAlertas, {
+                    method: "GET",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                });
+
+                if (respuesta.status === 401) {
+                    throw new Error(
+                        "Tu sesión ha expirado. Inicia sesión nuevamente."
+                    );
+                }
+
+                if (respuesta.status === 403) {
+                    throw new Error(
+                        "No tienes autorización para consultar las alertas."
+                    );
+                }
+
+                if (respuesta.status === 502 ||
+                    respuesta.status === 504) {
+                    throw new Error(
+                        "No se pudo establecer comunicación con la API."
+                    );
+                }
 
                 if (!respuesta.ok) {
-                    throw new Error("No se pudieron consultar las alertas.");
+                    throw new Error(
+                        "No se pudieron consultar las alertas. Código HTTP: " +
+                        respuesta.status
+                    );
                 }
 
                 const datos = await respuesta.json();
@@ -168,11 +259,39 @@
                     "tablaStockBajo",
                     "No hay productos con stock bajo."
                 );
+
             } catch (error) {
                 mostrarMensaje(
-                    error.message + " Verifica que la API esté ejecutándose.",
+                    error.message ||
+                    "No se pudo completar la consulta de alertas.",
                     "danger"
                 );
+
+                document.getElementById("totalAgotados").textContent = "—";
+                document.getElementById("totalStockBajo").textContent = "—";
+
+                const tablaAgotados =
+                    document.getElementById("tablaAgotados");
+
+                const tablaStockBajo =
+                    document.getElementById("tablaStockBajo");
+
+                tablaAgotados.replaceChildren();
+                tablaStockBajo.replaceChildren();
+
+                mostrarFilaVacia(
+                    tablaAgotados,
+                    "No se pudieron cargar los productos agotados."
+                );
+
+                mostrarFilaVacia(
+                    tablaStockBajo,
+                    "No se pudieron cargar los productos con stock bajo."
+                );
+
+            } finally {
+                cargando = false;
+                cambiarEstadoCarga(false);
             }
         }
 

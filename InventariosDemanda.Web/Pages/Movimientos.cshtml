@@ -4,6 +4,7 @@
 }
 
 <div class="container-fluid py-4">
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-1">Movimientos de inventario</h1>
@@ -11,15 +12,29 @@
                 Registra entradas y salidas y consulta el historial.
             </p>
         </div>
+
+        <button type="button"
+                id="botonActualizar"
+                class="btn btn-outline-secondary"
+                onclick="cargarDatos()">
+            Actualizar
+        </button>
     </div>
 
-    <div id="mensaje" class="alert d-none" role="alert"></div>
+    <!-- MENSAJES -->
+    <div id="mensaje"
+         class="alert d-none"
+         role="status"
+         aria-live="polite"></div>
 
+    <!-- INDICADORES -->
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <p class="text-secondary mb-1">Productos disponibles</p>
+                    <p class="text-secondary mb-1">
+                        Productos disponibles
+                    </p>
                     <h2 id="totalProductos" class="h3 mb-0">0</h2>
                 </div>
             </div>
@@ -28,13 +43,16 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <p class="text-secondary mb-1">Movimientos registrados</p>
+                    <p class="text-secondary mb-1">
+                        Movimientos registrados
+                    </p>
                     <h2 id="totalMovimientos" class="h3 mb-0">0</h2>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- FORMULARIO -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-3">
             <h2 class="h5 mb-0">Registrar movimiento</h2>
@@ -43,13 +61,18 @@
         <div class="card-body">
             <form id="formularioMovimiento">
                 <div class="row g-3">
+
                     <div class="col-md-6">
                         <label for="productoId" class="form-label">
                             Producto
                         </label>
 
-                        <select id="productoId" class="form-select" required>
-                            <option value="">Cargando productos...</option>
+                        <select id="productoId"
+                                class="form-select"
+                                required>
+                            <option value="">
+                                Cargando productos...
+                            </option>
                         </select>
                     </div>
 
@@ -58,7 +81,9 @@
                             Tipo de movimiento
                         </label>
 
-                        <select id="tipo" class="form-select" required>
+                        <select id="tipo"
+                                class="form-select"
+                                required>
                             <option value="ENTRADA">Entrada</option>
                             <option value="SALIDA">Salida</option>
                         </select>
@@ -96,11 +121,13 @@
                             Registrar movimiento
                         </button>
                     </div>
+
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- HISTORIAL -->
     <div class="card shadow-sm">
         <div class="card-header bg-white py-3">
             <h2 class="h5 mb-0">Historial de movimientos</h2>
@@ -123,7 +150,8 @@
 
                     <tbody id="tablaMovimientos">
                         <tr>
-                            <td colspan="7" class="text-center text-secondary">
+                            <td colspan="7"
+                                class="text-center text-secondary">
                                 Cargando movimientos...
                             </td>
                         </tr>
@@ -132,52 +160,170 @@
             </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     <script>
-        const apiProductos = "http://localhost:5014/api/productos";
-        const apiMovimientos = "http://localhost:5014/api/movimientos";
+        // ========================================
+        // CONFIGURACIÓN
+        // ========================================
 
-        const formulario = document.getElementById("formularioMovimiento");
-        const botonGuardar = document.getElementById("botonGuardar");
+        const apiProductos = "/api-proxy/productos";
+        const apiMovimientos = "/api-proxy/movimientos";
+
+        const formulario =
+            document.getElementById("formularioMovimiento");
+
+        const botonGuardar =
+            document.getElementById("botonGuardar");
+
+        const botonActualizar =
+            document.getElementById("botonActualizar");
+
+        let csrfToken = null;
+        let registrando = false;
+        let eliminando = false;
+        let cargando = false;
+
+        // ========================================
+        // TOKEN CSRF
+        // ========================================
+
+        async function obtenerCsrfToken() {
+            if (csrfToken) {
+                return csrfToken;
+            }
+
+            const respuesta = await fetch(
+                "/api-proxy/csrf-token",
+                {
+                    credentials: "same-origin",
+                    cache: "no-store"
+                }
+            );
+
+            if (respuesta.status === 401) {
+                throw new Error(
+                    "Tu sesión ha expirado. Inicia sesión nuevamente."
+                );
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    "No fue posible obtener el token de seguridad."
+                );
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.token) {
+                throw new Error(
+                    "El servidor no devolvió un token de seguridad."
+                );
+            }
+
+            csrfToken = datos.token;
+
+            return csrfToken;
+        }
+
+        // ========================================
+        // MENSAJES
+        // ========================================
 
         function mostrarMensaje(texto, tipo) {
             const mensaje = document.getElementById("mensaje");
+
             mensaje.textContent = texto;
             mensaje.className = `alert alert-${tipo}`;
         }
 
         function ocultarMensaje() {
             const mensaje = document.getElementById("mensaje");
+
             mensaje.textContent = "";
             mensaje.className = "alert d-none";
         }
 
-        // Cargar productos disponibles
-        async function cargarProductos() {
-            const respuesta = await fetch(apiProductos);
+        // ========================================
+        // LEER RESPUESTA
+        // ========================================
 
-            if (!respuesta.ok) {
-                throw new Error("No se pudieron consultar los productos.");
+        async function leerRespuesta(respuesta) {
+            const texto = await respuesta.text();
+
+            let datos = {};
+
+            try {
+                datos = texto ? JSON.parse(texto) : {};
+            } catch {
+                datos = {};
             }
 
-            const resultado = await respuesta.json();
+            if (!respuesta.ok) {
+                if (respuesta.status === 401) {
+                    throw new Error(
+                        "Tu sesión ha expirado. Inicia sesión nuevamente."
+                    );
+                }
+
+                if (respuesta.status === 403) {
+                    throw new Error(
+                        "No tienes autorización para realizar esta operación."
+                    );
+                }
+
+                if (respuesta.status === 400 &&
+                    (datos.mensaje || "").includes("Token de seguridad")) {
+                    csrfToken = null;
+                }
+
+                throw new Error(
+                    datos.mensaje ||
+                    datos.message ||
+                    datos.detail ||
+                    datos.title ||
+                    `Error HTTP ${respuesta.status}.`
+                );
+            }
+
+            return datos;
+        }
+
+        // ========================================
+        // CARGAR PRODUCTOS
+        // ========================================
+
+        async function cargarProductos() {
+            const respuesta = await fetch(apiProductos, {
+                credentials: "same-origin",
+                cache: "no-store"
+            });
+
+            const resultado = await leerRespuesta(respuesta);
 
             const productos = Array.isArray(resultado)
                 ? resultado
-                : resultado.value ?? [];
+                : Array.isArray(resultado.value)
+                    ? resultado.value
+                    : [];
 
             const selector = document.getElementById("productoId");
+
+            const seleccionAnterior = selector.value;
+
             selector.replaceChildren();
 
             const inicial = document.createElement("option");
             inicial.value = "";
             inicial.textContent = "Selecciona un producto";
+
             selector.appendChild(inicial);
 
             productos.forEach(producto => {
                 const opcion = document.createElement("option");
+
                 opcion.value = producto.id;
                 opcion.textContent =
                     `${producto.nombre} — Stock: ${producto.stockActual}`;
@@ -185,32 +331,41 @@
                 selector.appendChild(opcion);
             });
 
-            document.getElementById("totalProductos").textContent =
-                productos.length;
-        }
-
-        // Cargar historial de movimientos
-        async function cargarMovimientos() {
-            const respuesta = await fetch(apiMovimientos);
-
-            if (!respuesta.ok) {
-                throw new Error(
-                    "No se pudo consultar el historial de movimientos."
-                );
+            if (productos.some(p =>
+                String(p.id) === seleccionAnterior)) {
+                selector.value = seleccionAnterior;
             }
 
-            const resultado = await respuesta.json();
+            document.getElementById(
+                "totalProductos"
+            ).textContent = productos.length;
+        }
+
+        // ========================================
+        // CARGAR MOVIMIENTOS
+        // ========================================
+
+        async function cargarMovimientos() {
+            const respuesta = await fetch(apiMovimientos, {
+                credentials: "same-origin",
+                cache: "no-store"
+            });
+
+            const resultado = await leerRespuesta(respuesta);
 
             const movimientos = Array.isArray(resultado)
                 ? resultado
-                : resultado.value ?? [];
+                : Array.isArray(resultado.value)
+                    ? resultado.value
+                    : [];
 
             const tabla = document.getElementById("tablaMovimientos");
 
             tabla.replaceChildren();
 
-            document.getElementById("totalMovimientos").textContent =
-                movimientos.length;
+            document.getElementById(
+                "totalMovimientos"
+            ).textContent = movimientos.length;
 
             if (movimientos.length === 0) {
                 const fila = tabla.insertRow();
@@ -230,7 +385,7 @@
                 const valores = [
                     movimiento.id,
                     movimiento.fecha
-                        ? new Date(movimiento.fecha).toLocaleString()
+                        ? new Date(movimiento.fecha).toLocaleString("es-DO")
                         : "Sin fecha",
                     movimiento.producto?.nombre ??
                         `Producto ${movimiento.productoId}`,
@@ -241,7 +396,6 @@
 
                 valores.forEach((valor, indice) => {
                     const celda = fila.insertCell();
-
                     celda.textContent = valor ?? "";
 
                     if (indice === 3) {
@@ -252,79 +406,89 @@
                     }
                 });
 
-                const celdaAcciones = fila.insertCell();
-                celdaAcciones.className = "text-end";
+                const acciones = fila.insertCell();
+                acciones.className = "text-end";
 
-                const botonEliminar = document.createElement("button");
+                const btnEliminar =
+                    document.createElement("button");
 
-                botonEliminar.type = "button";
-                botonEliminar.className =
+                btnEliminar.type = "button";
+                btnEliminar.className =
                     "btn btn-outline-danger btn-sm";
-                botonEliminar.textContent = "Eliminar";
+                btnEliminar.textContent = "Eliminar";
 
-                botonEliminar.addEventListener("click", () => {
-                    eliminarMovimiento(movimiento.id, botonEliminar);
+                btnEliminar.addEventListener("click", () => {
+                    eliminarMovimiento(
+                        movimiento.id,
+                        btnEliminar
+                    );
                 });
 
-                celdaAcciones.appendChild(botonEliminar);
+                acciones.appendChild(btnEliminar);
             });
         }
 
-        // Actualizar productos e historial
+        // ========================================
+        // ACTUALIZAR DATOS
+        // ========================================
+
         async function cargarDatos() {
+            if (cargando) {
+                return;
+            }
+
+            cargando = true;
+            botonActualizar.disabled = true;
+
             try {
                 await Promise.all([
                     cargarProductos(),
                     cargarMovimientos()
                 ]);
             } catch (error) {
-                mostrarMensaje(
-                    error.message +
-                    " Verifica que la API esté ejecutándose.",
-                    "danger"
-                );
+                mostrarMensaje(error.message, "danger");
+            } finally {
+                cargando = false;
+                botonActualizar.disabled = false;
             }
         }
 
-        // Eliminar un movimiento
+        // ========================================
+        // ELIMINAR MOVIMIENTO
+        // ========================================
+
         async function eliminarMovimiento(id, boton) {
+            if (eliminando || registrando) {
+                return;
+            }
+
             if (!confirm(
-                `¿Eliminar el movimiento #${id}? Esta acción no se puede deshacer.`
+                `¿Eliminar el movimiento #${id}? Esta acción revertirá su efecto sobre el stock.`
             )) {
                 return;
             }
 
+            eliminando = true;
             ocultarMensaje();
 
             boton.disabled = true;
             boton.textContent = "Eliminando...";
 
             try {
+                const token = await obtenerCsrfToken();
+
                 const respuesta = await fetch(
                     `${apiMovimientos}/${id}`,
                     {
-                        method: "DELETE"
+                        method: "DELETE",
+                        credentials: "same-origin",
+                        headers: {
+                            "X-CSRF-TOKEN": token
+                        }
                     }
                 );
 
-                const texto = await respuesta.text();
-
-                let resultado = {};
-
-                try {
-                    resultado = texto ? JSON.parse(texto) : {};
-                } catch {
-                    resultado = {};
-                }
-
-                if (!respuesta.ok) {
-                    throw new Error(
-                        resultado.mensaje ||
-                        resultado.message ||
-                        resultado.detail ||
-                        `No se pudo eliminar el movimiento (HTTP ${respuesta.status}).`
-                    );
-                }
+                const resultado = await leerRespuesta(respuesta);
 
                 await cargarDatos();
 
@@ -333,17 +497,27 @@
                     "Movimiento eliminado correctamente.",
                     "success"
                 );
+
             } catch (error) {
                 mostrarMensaje(error.message, "danger");
-
                 boton.disabled = false;
                 boton.textContent = "Eliminar";
+
+            } finally {
+                eliminando = false;
             }
         }
 
-        // Registrar una entrada o salida
+        // ========================================
+        // REGISTRAR ENTRADA O SALIDA
+        // ========================================
+
         formulario.addEventListener("submit", async evento => {
             evento.preventDefault();
+
+            if (registrando || eliminando) {
+                return;
+            }
 
             ocultarMensaje();
 
@@ -355,59 +529,59 @@
                 document.getElementById("productoId").value
             );
 
+            const tipo =
+                document.getElementById("tipo").value;
+
             if (
                 !Number.isInteger(cantidad) ||
                 cantidad <= 0 ||
+                !Number.isInteger(productoId) ||
                 productoId <= 0
             ) {
                 mostrarMensaje(
                     "Selecciona un producto e introduce una cantidad válida.",
                     "warning"
                 );
+                return;
+            }
 
+            if (tipo !== "ENTRADA" && tipo !== "SALIDA") {
+                mostrarMensaje(
+                    "Selecciona un tipo de movimiento válido.",
+                    "warning"
+                );
                 return;
             }
 
             const datos = {
                 productoId,
-                tipo: document.getElementById("tipo").value,
+                tipo,
                 cantidad,
                 descripcion:
                     document.getElementById("descripcion").value.trim()
             };
 
+            registrando = true;
             botonGuardar.disabled = true;
             botonGuardar.textContent = "Registrando...";
 
             try {
-                const respuesta = await fetch(apiMovimientos, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(datos)
-                });
+                const token = await obtenerCsrfToken();
 
-                const texto = await respuesta.text();
+                const respuesta = await fetch(
+                    apiMovimientos,
+                    {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": token
+                        },
+                        body: JSON.stringify(datos)
+                    }
+                );
 
-                let resultado = {};
-
-                try {
-                    resultado = texto ? JSON.parse(texto) : {};
-                } catch {
-                    resultado = {};
-                }
-
-                if (!respuesta.ok) {
-                    throw new Error(
-                        resultado.mensaje ||
-                        resultado.message ||
-                        resultado.detail ||
-                        resultado.title ||
-                        texto ||
-                        `No fue posible registrar el movimiento (HTTP ${respuesta.status}).`
-                    );
-                }
+                await leerRespuesta(respuesta);
 
                 formulario.reset();
 
@@ -417,15 +591,21 @@
                     "Movimiento registrado correctamente.",
                     "success"
                 );
+
             } catch (error) {
                 mostrarMensaje(error.message, "danger");
+
             } finally {
+                registrando = false;
                 botonGuardar.disabled = false;
                 botonGuardar.textContent = "Registrar movimiento";
             }
         });
 
-        // Inicializar la vista
+        // ========================================
+        // INICIALIZAR PÁGINA
+        // ========================================
+
         cargarDatos();
     </script>
 }

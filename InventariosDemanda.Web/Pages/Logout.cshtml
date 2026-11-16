@@ -1,0 +1,19 @@
+﻿@page
+@model InventariosDemanda.Web.Pages.LogoutModel
+@{
+    ViewData["Title"] = "Cerrar sesión";
+}
+
+<h2>Cerrar sesión</h2>
+
+<p>¿Deseas finalizar tu sesión?</p>
+
+<form method="post">
+    <button type="submit" class="btn btn-danger">
+        Sí, cerrar sesión
+    </button>
+
+    <a asp-page="/Index" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>

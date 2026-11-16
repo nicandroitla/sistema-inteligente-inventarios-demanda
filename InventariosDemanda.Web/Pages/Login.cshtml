@@ -1,0 +1,87 @@
+﻿@page
+@model InventariosDemanda.Web.Pages.LoginModel
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="text-center mb-3">
+                        Iniciar sesión
+                    </h2>
+
+                    <p class="text-center text-muted">
+                        Sistema Inteligente de Inventarios y Demanda
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(Model.Mensaje))
+                    {
+                        <div class="alert alert-danger">
+                            @Model.Mensaje
+                        </div>
+                    }
+
+                    <form method="post">
+
+                        <div class="mb-3">
+                            <label asp-for="Correo"
+                                   class="form-label">
+                                Correo electrónico
+                            </label>
+
+                            <input asp-for="Correo"
+                                   type="email"
+                                   class="form-control"
+                                   autocomplete="email"
+                                   required />
+
+                            <span asp-validation-for="Correo"
+                                  class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Contrasena"
+                                   class="form-label">
+                                Contraseña
+                            </label>
+
+                            <input asp-for="Contrasena"
+                                   type="password"
+                                   class="form-control"
+                                   autocomplete="current-password"
+                                   required />
+
+                            <span asp-validation-for="Contrasena"
+                                  class="text-danger"></span>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Iniciar sesión
+                        </button>
+
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <p>
+                            ¿No tienes una cuenta?
+                            <a href="/Registro">Regístrate aquí</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
