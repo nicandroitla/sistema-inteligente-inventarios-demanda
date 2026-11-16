@@ -30,9 +30,13 @@ builder.Services.AddRazorPages(options =>
 
 builder.Services.AddHttpClient<SupabaseAuthService>();
 
+
 builder.Services.AddHttpClient("InventariosApi", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5014/");
+    var apiBaseUrl = builder.Configuration["InventariosApi:BaseUrl"]
+        ?? "http://localhost:5014/";
+
+    client.BaseAddress = new Uri(apiBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
