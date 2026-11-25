@@ -5,221 +5,168 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<div class="dashboard-header">
-    <h1>Dashboard</h1>
-    <p>Resumen general del estado de tu inventario.</p>
-</div>
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 
-<div class="dashboard-kpi-grid">
+<div class="pro-dashboard">
 
-    <div class="dashboard-kpi-item">
-        <div class="kpi-card">
-            <div class="kpi-label">Total de productos</div>
-            <div class="kpi-value" id="totalProductos">—</div>
-            <div class="kpi-description">Productos registrados</div>
+    <div class="db-header">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Supervisión inteligente de inventarios y demanda.</p>
         </div>
-    </div>
 
-    <div class="dashboard-kpi-item">
-        <div class="kpi-card">
-            <div class="kpi-label">Stock bajo</div>
-            <div class="kpi-value" id="productosStockBajo">—</div>
-            <div class="kpi-description">Requieren atención</div>
-        </div>
-    </div>
-
-    <div class="dashboard-kpi-item">
-        <div class="kpi-card">
-            <div class="kpi-label">Sin stock</div>
-            <div class="kpi-value" id="productosSinStock">—</div>
-            <div class="kpi-description">Productos agotados</div>
-        </div>
-    </div>
-
-    <div class="dashboard-kpi-item">
-        <div class="kpi-card">
-            <div class="kpi-label">Valor del inventario</div>
-            <div class="kpi-value" id="valorInventario">—</div>
-            <div class="kpi-description">Valor estimado actual</div>
-        </div>
-    </div>
-
-</div>
-
-<div class="system-card">
-    <h5>Estado del sistema</h5>
-
-    <div class="system-status">
-        <span class="status-dot" id="indicadorEstado"></span>
-        <span id="estadoSistema">
-            Conectando con la API...
-        </span>
-    </div>
-
-    <div style="margin-top: 15px;">
-        <button type="button"
-                id="btnActualizarDashboard"
-                onclick="cargarDashboard()"
-                style="padding: 9px 16px; cursor: pointer;">
-            Actualizar Dashboard
+        <button type="button" class="db-refresh" id="btnActualizarDashboard">
+            ↻ Actualizar datos
         </button>
     </div>
+
+    <div class="db-kpi-grid">
+
+        <div class="db-kpi" style="--accent: #2563eb;">
+            <div class="db-kpi-icon">▦</div>
+            <div class="db-kpi-label">Total de productos</div>
+            <div class="db-kpi-value" id="totalProductos">—</div>
+            <div class="db-kpi-description">Productos registrados</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #d97706;">
+            <div class="db-kpi-icon">△</div>
+            <div class="db-kpi-label">Stock bajo</div>
+            <div class="db-kpi-value" id="productosStockBajo">—</div>
+            <div class="db-kpi-description">Requieren atención</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #dc2626;">
+            <div class="db-kpi-icon">⊘</div>
+            <div class="db-kpi-label">Sin stock</div>
+            <div class="db-kpi-value" id="productosSinStock">—</div>
+            <div class="db-kpi-description">Productos agotados</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #16a34a;">
+            <div class="db-kpi-icon">$</div>
+            <div class="db-kpi-label">Valor del inventario</div>
+            <div class="db-kpi-value" id="valorInventario">—</div>
+            <div class="db-kpi-description">Valor estimado actual</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #0891b2;">
+            <div class="db-kpi-icon">▤</div>
+            <div class="db-kpi-label">Unidades disponibles</div>
+            <div class="db-kpi-value" id="totalUnidades">—</div>
+            <div class="db-kpi-description">Existencias totales</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #7c3aed;">
+            <div class="db-kpi-icon">↑</div>
+            <div class="db-kpi-label">Exceso de stock</div>
+            <div class="db-kpi-value" id="productosExcesoStock">—</div>
+            <div class="db-kpi-description">Superan el máximo permitido</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #2563eb;">
+            <div class="db-kpi-icon">↙</div>
+            <div class="db-kpi-label">Entradas</div>
+            <div class="db-kpi-value" id="totalEntradas">—</div>
+            <div class="db-kpi-description">Unidades en los últimos 7 días</div>
+        </div>
+
+        <div class="db-kpi" style="--accent: #0d9488;">
+            <div class="db-kpi-icon">↗</div>
+            <div class="db-kpi-label">Salidas</div>
+            <div class="db-kpi-value" id="totalSalidas">—</div>
+            <div class="db-kpi-description">Unidades en los últimos 7 días</div>
+        </div>
+
+    </div>
+
+    <div class="db-chart-grid">
+
+        <section class="db-panel">
+            <h2>Movimientos de inventario</h2>
+            <p class="db-subtitle">
+                Entradas y salidas de los últimos siete días.
+            </p>
+
+            <div class="db-bar-chart" id="graficoMovimientos">
+                <div class="db-empty-message">Cargando movimientos...</div>
+            </div>
+
+            <div class="db-legend">
+                <div class="db-legend-item">
+                    <span class="db-color" style="background: #2563eb;"></span>
+                    Entradas
+                </div>
+
+                <div class="db-legend-item">
+                    <span class="db-color" style="background: #14b8a6;"></span>
+                    Salidas
+                </div>
+            </div>
+        </section>
+
+        <section class="db-panel">
+            <h2>Distribución del inventario</h2>
+            <p class="db-subtitle">
+                Unidades disponibles por categoría.
+            </p>
+
+            <div class="db-donut" id="graficoDistribucion">
+                <div class="db-donut-center">
+                    <strong id="donutTotal">—</strong>
+                    <small>Unidades</small>
+                </div>
+            </div>
+
+            <div id="leyendaDistribucion">
+                <div class="db-empty-message">Cargando categorías...</div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="db-chart-grid">
+
+        <section class="db-panel">
+            <h2>Productos con mayores salidas</h2>
+            <p class="db-subtitle">
+                Top 5 productos durante los últimos siete días.
+            </p>
+
+            <div id="rankingDemanda">
+                <div class="db-empty-message">Cargando ranking...</div>
+            </div>
+        </section>
+
+        <section class="db-panel">
+            <h2>Estado de existencias</h2>
+            <p class="db-subtitle">
+                Disponibilidad actual respecto al stock máximo.
+            </p>
+
+            <div id="estadoExistencias">
+                <div class="db-empty-message">Cargando existencias...</div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="db-system">
+
+        <div class="db-system-status" role="status" aria-live="polite">
+            <span class="db-dot" id="indicadorEstado"></span>
+            <span id="estadoSistema">Conectando con la API...</span>
+        </div>
+
+        <div class="db-update">
+            Última actualización:
+            <strong id="ultimaActualizacion">—</strong>
+        </div>
+
+    </div>
+
 </div>
 
 @section Scripts {
-
-    <script>
-        let cargandoDashboard = false;
-
-        function actualizarEstado(mensaje, correcto) {
-            const estado = document.getElementById("estadoSistema");
-            const indicador = document.getElementById("indicadorEstado");
-
-            estado.textContent = mensaje;
-
-            indicador.style.backgroundColor =
-                correcto ? "#22c55e" : "#ef4444";
-        }
-
-        function mostrarDatosNoDisponibles() {
-            document.getElementById("totalProductos").textContent = "—";
-            document.getElementById("productosStockBajo").textContent = "—";
-            document.getElementById("productosSinStock").textContent = "—";
-            document.getElementById("valorInventario").textContent = "—";
-        }
-
-        async function cargarDashboard() {
-            if (cargandoDashboard) {
-                return;
-            }
-
-            cargandoDashboard = true;
-
-            const boton =
-                document.getElementById("btnActualizarDashboard");
-
-            boton.disabled = true;
-
-            document.getElementById("estadoSistema").textContent =
-                "Consultando datos del inventario...";
-
-            try {
-                const respuesta = await fetch("/api-proxy/dashboard", {
-                    method: "GET",
-                    credentials: "same-origin",
-                    cache: "no-store",
-                    headers: {
-                        "Accept": "application/json"
-                    }
-                });
-
-                console.log(
-                    "Dashboard - Código HTTP:",
-                    respuesta.status
-                );
-
-                if (respuesta.status === 401) {
-                    throw new Error(
-                        "Error 401: la sesión o el token de Supabase no es válido."
-                    );
-                }
-
-                if (respuesta.status === 403) {
-                    throw new Error(
-                        "Error 403: no tienes autorización para consultar el Dashboard."
-                    );
-                }
-
-                if (respuesta.status === 502) {
-                    throw new Error(
-                        "Error 502: el frontend no pudo comunicarse correctamente con la API."
-                    );
-                }
-
-                if (!respuesta.ok) {
-                    throw new Error(
-                        "Error HTTP " + respuesta.status +
-                        ": no fue posible obtener los datos."
-                    );
-                }
-
-                const tipoContenido =
-                    respuesta.headers.get("content-type") || "";
-
-                if (!tipoContenido.includes("application/json")) {
-                    throw new Error(
-                        "La respuesta del servidor no contiene JSON válido."
-                    );
-                }
-
-                const datos = await respuesta.json();
-
-                if (
-                    datos === null ||
-                    typeof datos !== "object" ||
-                    !("totalProductos" in datos) ||
-                    !("productosStockBajo" in datos) ||
-                    !("productosSinStock" in datos) ||
-                    !("valorInventario" in datos)
-                ) {
-                    throw new Error(
-                        "La API devolvió datos incompletos."
-                    );
-                }
-
-                document.getElementById("totalProductos").textContent =
-                    datos.totalProductos;
-
-                document.getElementById("productosStockBajo").textContent =
-                    datos.productosStockBajo;
-
-                document.getElementById("productosSinStock").textContent =
-                    datos.productosSinStock;
-
-                const valor = Number(datos.valorInventario);
-
-                if (!Number.isFinite(valor)) {
-                    throw new Error(
-                        "El valor del inventario no es válido."
-                    );
-                }
-
-                document.getElementById("valorInventario").textContent =
-                    "$" + valor.toLocaleString("es-DO", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-
-                actualizarEstado(
-                    "API conectada correctamente. Datos actualizados.",
-                    true
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Dashboard - Error:",
-                    error.message
-                );
-
-                mostrarDatosNoDisponibles();
-
-                actualizarEstado(
-                    error.message ||
-                    "No fue posible conectar con la API.",
-                    false
-                );
-
-            } finally {
-
-                boton.disabled = false;
-                cargandoDashboard = false;
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            cargarDashboard();
-        });
-    </script>
-
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
 }
