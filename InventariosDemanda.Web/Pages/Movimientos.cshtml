@@ -3,609 +3,276 @@
     ViewData["Title"] = "Movimientos de inventario";
 }
 
-<div class="container-fluid py-4">
+<link rel="stylesheet" href="~/css/movimientos.css" asp-append-version="true" />
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="pro-movimientos">
+
+    <div class="mv-header">
         <div>
-            <h1 class="h3 mb-1">Movimientos de inventario</h1>
-            <p class="text-secondary mb-0">
-                Registra entradas y salidas y consulta el historial.
-            </p>
+            <h1>Movimientos de inventario</h1>
+            <p>Control inteligente de entradas, salidas y existencias.</p>
         </div>
 
         <button type="button"
                 id="botonActualizar"
-                class="btn btn-outline-secondary"
+                class="btn btn-outline-primary"
                 onclick="cargarDatos()">
             Actualizar
         </button>
     </div>
 
+    <!-- INDICADORES -->
+
+    <div class="mv-kpi-grid">
+
+        <div class="mv-kpi" style="--accent: #2563eb;">
+            <div class="mv-kpi-label">Total de movimientos</div>
+            <div class="mv-kpi-value" id="totalMovimientos">—</div>
+        </div>
+
+        <div class="mv-kpi" style="--accent: #16a34a;">
+            <div class="mv-kpi-label">Unidades ingresadas</div>
+            <div class="mv-kpi-value" id="totalEntradas">—</div>
+        </div>
+
+        <div class="mv-kpi" style="--accent: #dc2626;">
+            <div class="mv-kpi-label">Unidades retiradas</div>
+            <div class="mv-kpi-value" id="totalSalidas">—</div>
+        </div>
+
+        <div class="mv-kpi" style="--accent: #7c3aed;">
+            <div class="mv-kpi-label">Balance neto histórico</div>
+            <div class="mv-kpi-value" id="balanceNeto">—</div>
+        </div>
+
+    </div>
+
     <!-- MENSAJES -->
+
     <div id="mensaje"
          class="alert d-none"
          role="status"
-         aria-live="polite"></div>
-
-    <!-- INDICADORES -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">
-                        Productos disponibles
-                    </p>
-                    <h2 id="totalProductos" class="h3 mb-0">0</h2>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">
-                        Movimientos registrados
-                    </p>
-                    <h2 id="totalMovimientos" class="h3 mb-0">0</h2>
-                </div>
-            </div>
-        </div>
+         aria-live="polite">
     </div>
 
     <!-- FORMULARIO -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h2 class="h5 mb-0">Registrar movimiento</h2>
-        </div>
 
-        <div class="card-body">
-            <form id="formularioMovimiento">
-                <div class="row g-3">
+    <section class="mv-panel">
 
-                    <div class="col-md-6">
-                        <label for="productoId" class="form-label">
-                            Producto
-                        </label>
+        <h2>Registrar movimiento</h2>
 
-                        <select id="productoId"
-                                class="form-select"
-                                required>
-                            <option value="">
-                                Cargando productos...
-                            </option>
-                        </select>
-                    </div>
+        <p class="text-muted small mb-4">
+            Registra una entrada o salida para actualizar las existencias.
+        </p>
 
-                    <div class="col-md-3">
-                        <label for="tipo" class="form-label">
-                            Tipo de movimiento
-                        </label>
+        <form id="formularioMovimiento">
 
-                        <select id="tipo"
-                                class="form-select"
-                                required>
-                            <option value="ENTRADA">Entrada</option>
-                            <option value="SALIDA">Salida</option>
-                        </select>
-                    </div>
+            <div class="row g-3">
 
-                    <div class="col-md-3">
-                        <label for="cantidad" class="form-label">
-                            Cantidad
-                        </label>
+                <div class="col-md-6">
 
-                        <input id="cantidad"
-                               type="number"
-                               class="form-control"
-                               min="1"
-                               step="1"
-                               required />
-                    </div>
+                    <label for="productoId" class="form-label">
+                        Producto
+                    </label>
 
-                    <div class="col-12">
-                        <label for="descripcion" class="form-label">
-                            Descripción
-                        </label>
+                    <select id="productoId"
+                            class="form-select"
+                            required>
+                        <option value="">
+                            Cargando productos...
+                        </option>
+                    </select>
 
-                        <input id="descripcion"
-                               type="text"
-                               class="form-control"
-                               maxlength="250"
-                               placeholder="Motivo del movimiento (opcional)" />
-                    </div>
-
-                    <div class="col-12">
-                        <button id="botonGuardar"
-                                type="submit"
-                                class="btn btn-primary">
-                            Registrar movimiento
-                        </button>
+                    <div class="form-text">
+                        Productos registrados:
+                        <strong id="totalProductos">—</strong>
                     </div>
 
                 </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- HISTORIAL -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white py-3">
-            <h2 class="h5 mb-0">Historial de movimientos</h2>
-        </div>
+                <div class="col-md-3">
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Fecha</th>
-                            <th>Producto</th>
-                            <th>Tipo</th>
-                            <th>Cantidad</th>
-                            <th>Descripción</th>
-                            <th class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
+                    <label for="tipo" class="form-label">
+                        Tipo de movimiento
+                    </label>
 
-                    <tbody id="tablaMovimientos">
-                        <tr>
-                            <td colspan="7"
-                                class="text-center text-secondary">
-                                Cargando movimientos...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <select id="tipo"
+                            class="form-select"
+                            required>
+                        <option value="ENTRADA">Entrada</option>
+                        <option value="SALIDA">Salida</option>
+                    </select>
+
+                </div>
+
+                <div class="col-md-3">
+
+                    <label for="cantidad" class="form-label">
+                        Cantidad
+                    </label>
+
+                    <input id="cantidad"
+                           type="number"
+                           class="form-control"
+                           placeholder="Ej. 5"
+                           min="1"
+                           step="1"
+                           required />
+
+                </div>
+
+                <div class="col-12">
+
+                    <label for="descripcion" class="form-label">
+                        Descripción
+                    </label>
+
+                    <input id="descripcion"
+                           type="text"
+                           class="form-control"
+                           maxlength="250"
+                           placeholder="Motivo del movimiento (opcional)" />
+
+                </div>
+
+                <div class="col-12 mt-4">
+
+                    <button id="botonGuardar"
+                            type="submit"
+                            class="btn btn-primary">
+                        Registrar movimiento
+                    </button>
+
+                </div>
+
             </div>
+
+        </form>
+
+    </section>
+
+    <!-- HISTORIAL Y FILTROS -->
+
+    <section class="mv-panel">
+
+        <h2>Historial de movimientos</h2>
+
+        <p class="text-muted small mb-4">
+            Consulta y filtra las operaciones realizadas en el inventario.
+        </p>
+
+        <div class="mv-filters">
+
+            <div>
+
+                <label for="buscarMovimiento" class="form-label">
+                    Buscar producto
+                </label>
+
+                <input type="search"
+                       id="buscarMovimiento"
+                       class="form-control"
+                       placeholder="Nombre del producto..."
+                       autocomplete="off" />
+
+            </div>
+
+            <div>
+
+                <label for="filtroTipo" class="form-label">
+                    Tipo de movimiento
+                </label>
+
+                <select id="filtroTipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    <option value="ENTRADA">Entradas</option>
+                    <option value="SALIDA">Salidas</option>
+                </select>
+
+            </div>
+
+            <div>
+
+                <label for="fechaDesde" class="form-label">
+                    Desde
+                </label>
+
+                <input type="date"
+                       id="fechaDesde"
+                       class="form-control" />
+
+            </div>
+
+            <div>
+
+                <label for="fechaHasta" class="form-label">
+                    Hasta
+                </label>
+
+                <input type="date"
+                       id="fechaHasta"
+                       class="form-control" />
+
+            </div>
+
         </div>
-    </div>
+
+        <div id="mensajeFiltros"
+             class="text-danger small mb-3"
+             role="status"
+             aria-live="polite">
+        </div>
+
+        <div class="mv-toolbar">
+
+            <span id="contadorMovimientos"
+                  class="mv-counter"
+                  aria-live="polite">
+                Cargando movimientos...
+            </span>
+
+            <button type="button"
+                    id="btnLimpiarFiltros"
+                    class="btn btn-sm btn-outline-secondary">
+                Limpiar filtros
+            </button>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table mv-table align-middle">
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Tipo</th>
+                        <th>Cantidad</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaMovimientos">
+
+                    <tr>
+                        <td colspan="7" class="mv-empty-message">
+                            Cargando movimientos...
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
 
 </div>
 
 @section Scripts {
-    <script>
-        // ========================================
-        // CONFIGURACIÓN
-        // ========================================
-
-        const apiProductos = "/api-proxy/productos";
-        const apiMovimientos = "/api-proxy/movimientos";
-
-        const formulario =
-            document.getElementById("formularioMovimiento");
-
-        const botonGuardar =
-            document.getElementById("botonGuardar");
-
-        const botonActualizar =
-            document.getElementById("botonActualizar");
-
-        let csrfToken = null;
-        let registrando = false;
-        let eliminando = false;
-        let cargando = false;
-
-        // ========================================
-        // TOKEN CSRF
-        // ========================================
-
-        async function obtenerCsrfToken() {
-            if (csrfToken) {
-                return csrfToken;
-            }
-
-            const respuesta = await fetch(
-                "/api-proxy/csrf-token",
-                {
-                    credentials: "same-origin",
-                    cache: "no-store"
-                }
-            );
-
-            if (respuesta.status === 401) {
-                throw new Error(
-                    "Tu sesión ha expirado. Inicia sesión nuevamente."
-                );
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(
-                    "No fue posible obtener el token de seguridad."
-                );
-            }
-
-            const datos = await respuesta.json();
-
-            if (!datos.token) {
-                throw new Error(
-                    "El servidor no devolvió un token de seguridad."
-                );
-            }
-
-            csrfToken = datos.token;
-
-            return csrfToken;
-        }
-
-        // ========================================
-        // MENSAJES
-        // ========================================
-
-        function mostrarMensaje(texto, tipo) {
-            const mensaje = document.getElementById("mensaje");
-
-            mensaje.textContent = texto;
-            mensaje.className = `alert alert-${tipo}`;
-        }
-
-        function ocultarMensaje() {
-            const mensaje = document.getElementById("mensaje");
-
-            mensaje.textContent = "";
-            mensaje.className = "alert d-none";
-        }
-
-        // ========================================
-        // LEER RESPUESTA
-        // ========================================
-
-        async function leerRespuesta(respuesta) {
-            const texto = await respuesta.text();
-
-            let datos = {};
-
-            try {
-                datos = texto ? JSON.parse(texto) : {};
-            } catch {
-                datos = {};
-            }
-
-            if (!respuesta.ok) {
-                if (respuesta.status === 401) {
-                    throw new Error(
-                        "Tu sesión ha expirado. Inicia sesión nuevamente."
-                    );
-                }
-
-                if (respuesta.status === 403) {
-                    throw new Error(
-                        "No tienes autorización para realizar esta operación."
-                    );
-                }
-
-                if (respuesta.status === 400 &&
-                    (datos.mensaje || "").includes("Token de seguridad")) {
-                    csrfToken = null;
-                }
-
-                throw new Error(
-                    datos.mensaje ||
-                    datos.message ||
-                    datos.detail ||
-                    datos.title ||
-                    `Error HTTP ${respuesta.status}.`
-                );
-            }
-
-            return datos;
-        }
-
-        // ========================================
-        // CARGAR PRODUCTOS
-        // ========================================
-
-        async function cargarProductos() {
-            const respuesta = await fetch(apiProductos, {
-                credentials: "same-origin",
-                cache: "no-store"
-            });
-
-            const resultado = await leerRespuesta(respuesta);
-
-            const productos = Array.isArray(resultado)
-                ? resultado
-                : Array.isArray(resultado.value)
-                    ? resultado.value
-                    : [];
-
-            const selector = document.getElementById("productoId");
-
-            const seleccionAnterior = selector.value;
-
-            selector.replaceChildren();
-
-            const inicial = document.createElement("option");
-            inicial.value = "";
-            inicial.textContent = "Selecciona un producto";
-
-            selector.appendChild(inicial);
-
-            productos.forEach(producto => {
-                const opcion = document.createElement("option");
-
-                opcion.value = producto.id;
-                opcion.textContent =
-                    `${producto.nombre} — Stock: ${producto.stockActual}`;
-
-                selector.appendChild(opcion);
-            });
-
-            if (productos.some(p =>
-                String(p.id) === seleccionAnterior)) {
-                selector.value = seleccionAnterior;
-            }
-
-            document.getElementById(
-                "totalProductos"
-            ).textContent = productos.length;
-        }
-
-        // ========================================
-        // CARGAR MOVIMIENTOS
-        // ========================================
-
-        async function cargarMovimientos() {
-            const respuesta = await fetch(apiMovimientos, {
-                credentials: "same-origin",
-                cache: "no-store"
-            });
-
-            const resultado = await leerRespuesta(respuesta);
-
-            const movimientos = Array.isArray(resultado)
-                ? resultado
-                : Array.isArray(resultado.value)
-                    ? resultado.value
-                    : [];
-
-            const tabla = document.getElementById("tablaMovimientos");
-
-            tabla.replaceChildren();
-
-            document.getElementById(
-                "totalMovimientos"
-            ).textContent = movimientos.length;
-
-            if (movimientos.length === 0) {
-                const fila = tabla.insertRow();
-                const celda = fila.insertCell();
-
-                celda.colSpan = 7;
-                celda.className = "text-center text-secondary";
-                celda.textContent =
-                    "Todavía no hay movimientos registrados.";
-
-                return;
-            }
-
-            movimientos.forEach(movimiento => {
-                const fila = tabla.insertRow();
-
-                const valores = [
-                    movimiento.id,
-                    movimiento.fecha
-                        ? new Date(movimiento.fecha).toLocaleString("es-DO")
-                        : "Sin fecha",
-                    movimiento.producto?.nombre ??
-                        `Producto ${movimiento.productoId}`,
-                    movimiento.tipo,
-                    movimiento.cantidad,
-                    movimiento.descripcion || "Sin descripción"
-                ];
-
-                valores.forEach((valor, indice) => {
-                    const celda = fila.insertCell();
-                    celda.textContent = valor ?? "";
-
-                    if (indice === 3) {
-                        celda.className =
-                            String(movimiento.tipo).toUpperCase() === "ENTRADA"
-                                ? "text-success fw-semibold"
-                                : "text-danger fw-semibold";
-                    }
-                });
-
-                const acciones = fila.insertCell();
-                acciones.className = "text-end";
-
-                const btnEliminar =
-                    document.createElement("button");
-
-                btnEliminar.type = "button";
-                btnEliminar.className =
-                    "btn btn-outline-danger btn-sm";
-                btnEliminar.textContent = "Eliminar";
-
-                btnEliminar.addEventListener("click", () => {
-                    eliminarMovimiento(
-                        movimiento.id,
-                        btnEliminar
-                    );
-                });
-
-                acciones.appendChild(btnEliminar);
-            });
-        }
-
-        // ========================================
-        // ACTUALIZAR DATOS
-        // ========================================
-
-        async function cargarDatos() {
-            if (cargando) {
-                return;
-            }
-
-            cargando = true;
-            botonActualizar.disabled = true;
-
-            try {
-                await Promise.all([
-                    cargarProductos(),
-                    cargarMovimientos()
-                ]);
-            } catch (error) {
-                mostrarMensaje(error.message, "danger");
-            } finally {
-                cargando = false;
-                botonActualizar.disabled = false;
-            }
-        }
-
-        // ========================================
-        // ELIMINAR MOVIMIENTO
-        // ========================================
-
-        async function eliminarMovimiento(id, boton) {
-            if (eliminando || registrando) {
-                return;
-            }
-
-            if (!confirm(
-                `¿Eliminar el movimiento #${id}? Esta acción revertirá su efecto sobre el stock.`
-            )) {
-                return;
-            }
-
-            eliminando = true;
-            ocultarMensaje();
-
-            boton.disabled = true;
-            boton.textContent = "Eliminando...";
-
-            try {
-                const token = await obtenerCsrfToken();
-
-                const respuesta = await fetch(
-                    `${apiMovimientos}/${id}`,
-                    {
-                        method: "DELETE",
-                        credentials: "same-origin",
-                        headers: {
-                            "X-CSRF-TOKEN": token
-                        }
-                    }
-                );
-
-                const resultado = await leerRespuesta(respuesta);
-
-                await cargarDatos();
-
-                mostrarMensaje(
-                    resultado.mensaje ||
-                    "Movimiento eliminado correctamente.",
-                    "success"
-                );
-
-            } catch (error) {
-                mostrarMensaje(error.message, "danger");
-                boton.disabled = false;
-                boton.textContent = "Eliminar";
-
-            } finally {
-                eliminando = false;
-            }
-        }
-
-        // ========================================
-        // REGISTRAR ENTRADA O SALIDA
-        // ========================================
-
-        formulario.addEventListener("submit", async evento => {
-            evento.preventDefault();
-
-            if (registrando || eliminando) {
-                return;
-            }
-
-            ocultarMensaje();
-
-            const cantidad = Number(
-                document.getElementById("cantidad").value
-            );
-
-            const productoId = Number(
-                document.getElementById("productoId").value
-            );
-
-            const tipo =
-                document.getElementById("tipo").value;
-
-            if (
-                !Number.isInteger(cantidad) ||
-                cantidad <= 0 ||
-                !Number.isInteger(productoId) ||
-                productoId <= 0
-            ) {
-                mostrarMensaje(
-                    "Selecciona un producto e introduce una cantidad válida.",
-                    "warning"
-                );
-                return;
-            }
-
-            if (tipo !== "ENTRADA" && tipo !== "SALIDA") {
-                mostrarMensaje(
-                    "Selecciona un tipo de movimiento válido.",
-                    "warning"
-                );
-                return;
-            }
-
-            const datos = {
-                productoId,
-                tipo,
-                cantidad,
-                descripcion:
-                    document.getElementById("descripcion").value.trim()
-            };
-
-            registrando = true;
-            botonGuardar.disabled = true;
-            botonGuardar.textContent = "Registrando...";
-
-            try {
-                const token = await obtenerCsrfToken();
-
-                const respuesta = await fetch(
-                    apiMovimientos,
-                    {
-                        method: "POST",
-                        credentials: "same-origin",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": token
-                        },
-                        body: JSON.stringify(datos)
-                    }
-                );
-
-                await leerRespuesta(respuesta);
-
-                formulario.reset();
-
-                await cargarDatos();
-
-                mostrarMensaje(
-                    "Movimiento registrado correctamente.",
-                    "success"
-                );
-
-            } catch (error) {
-                mostrarMensaje(error.message, "danger");
-
-            } finally {
-                registrando = false;
-                botonGuardar.disabled = false;
-                botonGuardar.textContent = "Registrar movimiento";
-            }
-        });
-
-        // ========================================
-        // INICIALIZAR PÁGINA
-        // ========================================
-
-        cargarDatos();
-    </script>
+    <script src="~/js/movimientos.js" asp-append-version="true"></script>
 }
