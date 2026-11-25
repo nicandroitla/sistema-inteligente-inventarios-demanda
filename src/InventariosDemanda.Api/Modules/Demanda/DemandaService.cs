@@ -55,4 +55,195 @@ public class DemandaService
 
         return demanda;
     }
+
+
+    // Motor estadistico de prediccion de demanda.
+    public async Task<object> ObtenerPrediccionesAsync()
+    {
+        const int diasHistorial = 30;
+
+        var hoy = DateTime.Today;
+        var desde = hoy.AddDays(-diasHistorial);
+        var hasta = hoy;
+
+        var productos = await _context.Productos
+            .AsNoTracking()
+            .ToListAsync();
+
+        var movimientos = await _context.MovimientosInventario
+            .AsNoTracking()
+            .Where(m =>
+                m.Fecha >= desde &&
+                m.Fecha < hasta &&
+                m.Tipo == "SALIDA")
+            .ToListAsync();
+
+        var resumen = productos.Select(producto =>
+        {
+            var salidas = movimientos
+                .Where(m => m.ProductoId == producto.Id)
+                .ToList();
+
+            var unidadesSalida = salidas.Sum(m => m.Cantidad);
+
+            var promedioDiario =
+                (decimal)unidadesSalida / diasHistorial;
+
+            var demanda7Dias =
+                (int)Math.Ceiling((decimal)unidadesSalida * 7 / diasHistorial);
+
+            var demanda15Dias =
+                (int)Math.Ceiling((decimal)unidadesSalida * 15 / diasHistorial);
+
+            var demanda30Dias =
+                (int)Math.Ceiling((decimal)unidadesSalida * 30 / diasHistorial);
+
+            decimal? diasCobertura = promedioDiario > 0
+                ? Math.Round(
+                    producto.StockActual / promedioDiario, 1)
+                : null;
+
+            var stockObjetivo = Math.Min(
+                producto.StockMaximo,
+                demanda30Dias + producto.StockMinimo);
+
+            var reposicionSugerida = Math.Max(
+                0,
+                stockObjetivo - producto.StockActual);
+
+            var demandaNoCubierta = Math.Max(
+                0,
+                demanda30Dias + producto.StockMinimo -
+                producto.StockActual - reposicionSugerida);
+
+            var estado = producto.StockActual <= 0
+                ? "Agotado"
+                : producto.StockActual > producto.StockMaximo
+                    ? "Exceso de stock"
+                    : producto.StockActual <= producto.StockMinimo
+                        ? "Stock bajo"
+                        : diasCobertura.HasValue &&
+                          diasCobertura.Value <= 7
+                            ? "Riesgo de agotamiento"
+                            : reposicionSugerida > 0
+                                ? "Reposicion preventiva"
+                                : "Stock suficiente";
+
+            return new
+            {
+                productoId = producto.Id,
+                producto = producto.Nombre,
+                categoria = producto.Categoria,
+                stockActual = producto.StockActual,
+                stockMinimo = producto.StockMinimo,
+                stockMaximo = producto.StockMaximo,
+                movimientosSalida = salidas.Count,
+                unidadesSalida,
+                promedioDiario = Math.Round(promedioDiario, 4),
+                demanda7Dias,
+                demanda15Dias,
+                demanda30Dias,
+                diasCobertura,
+                stockObjetivo,
+                reposicionSugerida,
+                demandaNoCubierta,
+                costoReposicion =
+                    reposicionSugerida * producto.Precio,
+                estado,
+                tieneSalidas = unidadesSalida > 0
+            };
+        })
+        .OrderByDescending(p => p.unidadesSalida)
+        .ThenBy(p => p.producto)
+        .ToList();
+
+        var totalSalidas = resumen.Sum(p => p.unidadesSalida);
+
+        var maximoSalidas = resumen.Count > 0
+            ? resumen.Max(p => p.unidadesSalida)
+            : 0;
+
+        var predicciones = resumen.Select(p => new
+        {
+            p.productoId,
+            p.producto,
+            p.categoria,
+            p.stockActual,
+            p.stockMinimo,
+            p.stockMaximo,
+            p.movimientosSalida,
+            p.unidadesSalida,
+            p.promedioDiario,
+            p.demanda7Dias,
+            p.demanda15Dias,
+            p.demanda30Dias,
+            p.diasCobertura,
+            p.stockObjetivo,
+            p.reposicionSugerida,
+            p.demandaNoCubierta,
+            p.costoReposicion,
+            p.estado,
+            p.tieneSalidas,
+
+            participacion = totalSalidas > 0
+                ? Math.Round(
+                    p.unidadesSalida * 100m / totalSalidas, 1)
+                : 0m,
+
+            nivelDemanda = p.unidadesSalida == 0
+                ? "Sin salidas"
+                : p.unidadesSalida >= maximoSalidas * 0.70m
+                    ? "Alta"
+                    : p.unidadesSalida >= maximoSalidas * 0.30m
+                        ? "Media"
+                        : "Baja"
+        })
+        .ToList();
+
+        return new
+        {
+            metodo = "Promedio diario historico",
+            diasHistorial,
+            fechaDesde = desde,
+            fechaHasta = hasta.AddDays(-1),
+            fechaAnalisis = DateTimeOffset.Now,
+
+            totalProductos = resumen.Count,
+            totalSalidas,
+
+            productosConSalidas =
+                resumen.Count(p => p.tieneSalidas),
+
+            productosSinSalidas =
+                resumen.Count(p => !p.tieneSalidas),
+
+            productosRequierenReposicion =
+                resumen.Count(p => p.reposicionSugerida > 0),
+
+            productosEnRiesgo =
+                resumen.Count(p =>
+                    p.stockActual <= 0 ||
+                    (p.diasCobertura.HasValue &&
+                     p.diasCobertura.Value <= 7)),
+
+            demandaTotal7Dias =
+                resumen.Sum(p => p.demanda7Dias),
+
+            demandaTotal15Dias =
+                resumen.Sum(p => p.demanda15Dias),
+
+            demandaTotal30Dias =
+                resumen.Sum(p => p.demanda30Dias),
+
+            totalUnidadesReposicion =
+                resumen.Sum(p => p.reposicionSugerida),
+
+            costoTotalReposicion =
+                resumen.Sum(p => p.costoReposicion),
+
+            predicciones
+        };
+    }
+
 }
+

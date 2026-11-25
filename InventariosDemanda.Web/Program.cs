@@ -1,4 +1,4 @@
-
+ï»¿
 using InventariosDemanda.Web.Services;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -9,7 +9,7 @@ using System.Net.Http.Headers;
 var builder = WebApplication.CreateBuilder(args);
 
 // ========================================
-// 1. CONFIGURACIÓN DE RAZOR PAGES
+// 1. CONFIGURACIÃ“N DE RAZOR PAGES
 // ========================================
 
 builder.Services.AddRazorPages(options =>
@@ -44,7 +44,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SupabaseTokenStore>();
 
 // ========================================
-// 3. AUTENTICACIÓN CON COOKIES
+// 3. AUTENTICACIÃ“N CON COOKIES
 // ========================================
 
 builder.Services
@@ -63,7 +63,7 @@ builder.Services
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
         options.SlidingExpiration = true;
 
-        // Validar que la sesión conserve su token.
+        // Validar que la sesiÃ³n conserve su token.
         options.Events.OnValidatePrincipal = async context =>
         {
             var sessionId = context.Principal?
@@ -84,8 +84,8 @@ builder.Services
             }
         };
 
-        // Las rutas API devuelven códigos HTTP,
-        // no redirecciones a páginas HTML.
+        // Las rutas API devuelven cÃ³digos HTTP,
+        // no redirecciones a pÃ¡ginas HTML.
         options.Events.OnRedirectToLogin = context =>
         {
             if (context.Request.Path.StartsWithSegments("/api-proxy"))
@@ -118,7 +118,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ========================================
-// 4. PROTECCIÓN ANTIFALSIFICACIÓN CSRF
+// 4. PROTECCIÃ“N ANTIFALSIFICACIÃ“N CSRF
 // ========================================
 
 // IMPORTANTE: registrar ANTES de builder.Build().
@@ -133,7 +133,7 @@ builder.Services.AddAntiforgery(options =>
 });
 
 // ========================================
-// 5. CONSTRUIR APLICACIÓN
+// 5. CONSTRUIR APLICACIÃ“N
 // ========================================
 
 var app = builder.Build();
@@ -180,7 +180,7 @@ app.MapGet("/api-proxy/csrf-token", (
 .RequireAuthorization();
 
 // ========================================
-// 8. FUNCIÓN COMPARTIDA DEL PROXY
+// 8. FUNCIÃ“N COMPARTIDA DEL PROXY
 // ========================================
 
 async Task<IResult> EnviarSolicitudApiAsync(
@@ -192,7 +192,7 @@ async Task<IResult> EnviarSolicitudApiAsync(
     bool incluirCuerpo = false)
 {
     // ------------------------------------
-    // VALIDACIÓN DE SESIÓN
+    // VALIDACIÃ“N DE SESIÃ“N
     // ------------------------------------
 
     var sessionId =
@@ -211,11 +211,11 @@ async Task<IResult> EnviarSolicitudApiAsync(
     }
 
     // ------------------------------------
-    // VALIDACIÓN CSRF
+    // VALIDACIÃ“N CSRF
     // ------------------------------------
 
     // Las operaciones que modifican datos
-    // deben presentar un token CSRF válido.
+    // deben presentar un token CSRF vÃ¡lido.
     if (metodo != HttpMethod.Get &&
         metodo != HttpMethod.Head &&
         metodo != HttpMethod.Options)
@@ -232,7 +232,7 @@ async Task<IResult> EnviarSolicitudApiAsync(
             return Results.Json(
                 new
                 {
-                    mensaje = "Token de seguridad inválido o ausente. Actualiza la página e inténtalo nuevamente."
+                    mensaje = "Token de seguridad invÃ¡lido o ausente. Actualiza la pÃ¡gina e intÃ©ntalo nuevamente."
                 },
                 statusCode: StatusCodes.Status400BadRequest);
         }
@@ -277,7 +277,7 @@ async Task<IResult> EnviarSolicitudApiAsync(
         {
             return Results.BadRequest(new
             {
-                mensaje = "El cuerpo de la solicitud está vacío."
+                mensaje = "El cuerpo de la solicitud estÃ¡ vacÃ­o."
             });
         }
 
@@ -321,7 +321,7 @@ async Task<IResult> EnviarSolicitudApiAsync(
             return Results.Json(
                 new
                 {
-                    mensaje = "Ocurrió un error en la API."
+                    mensaje = "OcurriÃ³ un error en la API."
                 },
                 statusCode: StatusCodes.Status502BadGateway);
         }
@@ -346,7 +346,7 @@ async Task<IResult> EnviarSolicitudApiAsync(
         return Results.Json(
             new
             {
-                mensaje = "La API tardó demasiado en responder."
+                mensaje = "La API tardÃ³ demasiado en responder."
             },
             statusCode: StatusCodes.Status504GatewayTimeout);
     }
@@ -540,7 +540,27 @@ app.MapGet("/api-proxy/alertas", async (
 .RequireAuthorization();
 
 // ========================================
-// 13. INICIAR APLICACIÓN
+// 13. INICIAR APLICACIÃ“N
 // ========================================
 
+
+// ========================================
+// PROXY DE DEMANDA INTELIGENTE
+// ========================================
+
+app.MapGet("/api-proxy/demanda/predicciones", async (
+    HttpContext context,
+    SupabaseTokenStore tokenStore,
+    IHttpClientFactory httpClientFactory) =>
+{
+    return await EnviarSolicitudApiAsync(
+        context,
+        tokenStore,
+        httpClientFactory,
+        HttpMethod.Get,
+        "api/demanda/predicciones");
+})
+.RequireAuthorization();
+
 app.Run();
+

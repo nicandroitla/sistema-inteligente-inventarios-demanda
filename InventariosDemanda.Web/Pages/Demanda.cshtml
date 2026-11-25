@@ -1,568 +1,302 @@
 ﻿@page
+@model DemandaModel
 @{
-    ViewData["Title"] = "Análisis de demanda";
+    ViewData["Title"] = "Demanda inteligente";
 }
 
-<div class="container-fluid py-4">
+<link rel="stylesheet" href="~/css/demanda.css" asp-append-version="true" />
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="pro-demanda">
+
+    <!-- ENCABEZADO -->
+
+    <div class="dm-header">
         <div>
-            <h1 class="h3 fw-bold mb-1">Análisis de demanda</h1>
-            <p class="text-secondary mb-0">
-                Analiza las salidas registradas y detecta necesidades de reposición.
-            </p>
+            <h1>Demanda inteligente</h1>
+            <p>Analisis predictivo y planificacion de inventario.</p>
         </div>
 
         <button id="botonActualizar"
                 type="button"
-                class="btn btn-outline-primary"
-                onclick="cargarDemanda()">
-            Actualizar análisis
+                class="btn btn-outline-primary">
+            Actualizar analisis
         </button>
     </div>
 
-    <div id="mensaje" class="alert d-none" role="alert"></div>
+    <div id="mensaje"
+         class="alert d-none"
+         role="status"
+         aria-live="polite">
+    </div>
 
     <!-- INDICADORES -->
-    <div class="row g-3 mb-4">
 
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">Productos analizados</p>
-                    <div id="totalProductos" class="h3 fw-bold mb-0">—</div>
-                </div>
-            </div>
+    <div class="dm-kpi-grid">
+
+        <div class="dm-kpi dm-blue">
+            <div class="dm-kpi-label">Productos analizados</div>
+            <div id="totalProductos" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Catalogo de inventario</div>
         </div>
 
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">Unidades de salida</p>
-                    <div id="totalSalidas" class="h3 fw-bold mb-0">—</div>
-                </div>
-            </div>
+        <div class="dm-kpi dm-purple">
+            <div class="dm-kpi-label">Salidas historicas</div>
+            <div id="totalSalidas" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Ultimos 30 dias completos</div>
         </div>
 
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">Productos con salidas</p>
-                    <div id="productosConSalidas" class="h3 fw-bold mb-0">—</div>
-                </div>
-            </div>
+        <div class="dm-kpi dm-orange">
+            <div class="dm-kpi-label">Requieren reposicion</div>
+            <div id="productosRequierenReposicion" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Segun demanda proyectada</div>
         </div>
 
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <p class="text-secondary mb-1">Requieren reposición</p>
-                    <div id="productosBajos" class="h3 fw-bold mb-0">—</div>
-                </div>
-            </div>
+        <div class="dm-kpi dm-red">
+            <div class="dm-kpi-label">Productos en riesgo</div>
+            <div id="productosEnRiesgo" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Agotados o cobertura de hasta 7 dias</div>
+        </div>
+
+        <div class="dm-kpi dm-cyan">
+            <div class="dm-kpi-label">Demanda a 30 dias</div>
+            <div id="demandaTotal30Dias" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Unidades proyectadas</div>
+        </div>
+
+        <div class="dm-kpi dm-green">
+            <div class="dm-kpi-label">Unidades a reponer</div>
+            <div id="totalUnidadesReposicion" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Cantidad total recomendada</div>
+        </div>
+
+        <div class="dm-kpi dm-blue">
+            <div class="dm-kpi-label">Valor referencial de reposicion</div>
+            <div id="costoTotalReposicion" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Segun precios registrados</div>
+        </div>
+
+        <div class="dm-kpi dm-gray">
+            <div class="dm-kpi-label">Sin salidas registradas</div>
+            <div id="productosSinSalidas" class="dm-kpi-value">—</div>
+            <div class="dm-kpi-detail">Sin consumo observado en el periodo</div>
         </div>
 
     </div>
 
-    <!-- DEMANDA POR PRODUCTO -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+    <!-- GRAFICOS -->
 
-            <h2 class="h5 fw-bold mb-1">Demanda por producto</h2>
+    <div class="dm-charts-grid">
 
-            <p class="text-secondary small mb-3">
-                Clasificación basada en las unidades de salida acumuladas.
-                No representa una predicción de ventas futuras.
+        <section class="dm-panel">
+
+            <h2>Proyeccion de demanda</h2>
+
+            <p class="dm-panel-description">
+                Consumo estimado para los proximos 7, 15 y 30 dias.
             </p>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Salidas registradas</th>
-                            <th>Unidades retiradas</th>
-                            <th>Participación</th>
-                            <th>Nivel histórico</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="tablaDemanda">
-                        <tr>
-                            <td colspan="5"
-                                class="text-center text-secondary">
-                                Cargando análisis...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="graficoProyecciones">
+                <p class="text-secondary">Cargando proyecciones...</p>
             </div>
 
-        </div>
-    </div>
+        </section>
 
-    <!-- PLAN DE REPOSICIÓN -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+        <section class="dm-panel">
 
-            <h2 class="h5 fw-bold mb-1">Plan de reposición</h2>
+            <h2>Productos con mayor demanda historica</h2>
 
-            <p class="text-secondary small mb-3">
-                La cantidad sugerida permite alcanzar el stock mínimo configurado.
+            <p class="dm-panel-description">
+                Clasificacion segun unidades retiradas durante el periodo.
             </p>
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Stock actual</th>
-                            <th>Stock mínimo</th>
-                            <th>Unidades sugeridas</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
+            <div id="graficoRanking">
+                <p class="text-secondary">Cargando productos...</p>
+            </div>
 
-                    <tbody id="tablaReposicion">
-                        <tr>
-                            <td colspan="5"
-                                class="text-center text-secondary">
-                                Calculando reposición...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        </section>
+
+    </div>
+
+    <!-- INFORMACION DEL MODELO -->
+
+    <div class="dm-method">
+
+        <strong>Modelo predictivo utilizado</strong>
+
+        Las estimaciones se calculan mediante el promedio diario
+        de salidas de los ultimos 30 dias completos.
+
+        El modelo supone que el ritmo de consumo observado
+        se mantiene durante los proximos dias.
+
+        <div id="periodoAnalisis" class="dm-period">
+            Consultando periodo...
+        </div>
+
+    </div>
+
+    <!-- PREDICCIONES POR PRODUCTO -->
+
+    <section class="dm-panel">
+
+        <h2>Predicciones por producto</h2>
+
+        <p class="dm-panel-description">
+            Analiza el consumo historico, la demanda futura estimada
+            y la cobertura de existencias.
+        </p>
+
+        <div class="dm-filters">
+
+            <div>
+                <label for="buscarProducto">Buscar producto</label>
+
+                <input id="buscarProducto"
+                       type="search"
+                       class="form-control"
+                       placeholder="Nombre del producto..." />
+            </div>
+
+            <div>
+                <label for="filtroNivel">Nivel de demanda</label>
+
+                <select id="filtroNivel" class="form-select">
+                    <option value="">Todos los niveles</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Baja">Baja</option>
+                    <option value="Sin salidas">Sin salidas</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filtroEstado">Estado del inventario</label>
+
+                <select id="filtroEstado" class="form-select">
+                    <option value="">Todos los estados</option>
+                    <option value="Agotado">Agotado</option>
+                    <option value="Stock bajo">Stock bajo</option>
+                    <option value="Riesgo de agotamiento">Riesgo de agotamiento</option>
+                    <option value="Reposicion preventiva">Reposicion preventiva</option>
+                    <option value="Stock suficiente">Stock suficiente</option>
+                    <option value="Exceso de stock">Exceso de stock</option>
+                </select>
             </div>
 
         </div>
+
+        <div class="dm-toolbar">
+
+            <span id="contadorProductos" class="dm-counter">
+                Consultando productos...
+            </span>
+
+            <button id="btnLimpiarFiltros"
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary">
+                Limpiar filtros
+            </button>
+
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table dm-table">
+
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Salidas (uds.)</th>
+                        <th>Promedio diario</th>
+                        <th>7 dias</th>
+                        <th>15 dias</th>
+                        <th>30 dias</th>
+                        <th>Cobertura</th>
+                        <th>Participacion</th>
+                        <th>Nivel</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaPredicciones">
+                    <tr>
+                        <td colspan="9" class="dm-empty-message">
+                            Cargando predicciones...
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <!-- PLAN DE REPOSICION -->
+
+    <section class="dm-panel">
+
+        <h2>Plan de reposicion inteligente</h2>
+
+        <p class="dm-panel-description">
+            Recomendaciones para cubrir la demanda mensual estimada
+            y conservar el stock minimo, respetando el stock maximo.
+        </p>
+
+        <div class="table-responsive">
+
+            <table class="table dm-table">
+
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock actual</th>
+                        <th>Minimo</th>
+                        <th>Maximo</th>
+                        <th>Stock objetivo</th>
+                        <th>Reponer</th>
+                        <th>Objetivo no cubierto</th>
+                        <th>Valor referencial</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaReposicion">
+                    <tr>
+                        <td colspan="9" class="dm-empty-message">
+                            Calculando reposicion...
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <!-- LIMITACIONES -->
+
+    <div class="dm-method">
+
+        <strong>Consideraciones del analisis</strong>
+
+        Las proyecciones son estimaciones estadisticas,
+        no garantias de ventas futuras.
+
+        Las salidas de prueba tambien influyen en los resultados.
+        La ausencia de salidas no garantiza que no exista demanda.
+
+        El valor de reposicion utiliza el precio registrado,
+        no necesariamente el costo de compra al proveedor.
+
     </div>
 
-    <div class="alert alert-info">
-        <strong>Nota:</strong>
-        este análisis utiliza los movimientos registrados en el sistema.
-        Las salidas de prueba también cuentan. Para obtener conclusiones
-        comerciales fiables, registra datos reales y utiliza un período
-        de análisis definido.
+    <div id="ultimaActualizacion" class="dm-footer">
+        Ultima actualizacion: pendiente
     </div>
 
 </div>
 
 @section Scripts {
-    <script>
-        // ============================================
-        // RUTAS AUTENTICADAS DEL FRONTEND
-        // ============================================
-
-        const apiProductos = "/api-proxy/productos";
-        const apiMovimientos = "/api-proxy/movimientos";
-
-        let cargando = false;
-
-        // ============================================
-        // MENSAJES
-        // ============================================
-
-        function mostrarError(texto) {
-            const mensaje = document.getElementById("mensaje");
-
-            mensaje.textContent = texto;
-            mensaje.className = "alert alert-danger";
-        }
-
-        function limpiarMensaje() {
-            const mensaje = document.getElementById("mensaje");
-
-            mensaje.textContent = "";
-            mensaje.className = "alert d-none";
-        }
-
-        // ============================================
-        // CONSULTAS AL PROXY
-        // ============================================
-
-        async function consultarApi(url) {
-            const respuesta = await fetch(url, {
-                method: "GET",
-                credentials: "same-origin",
-                headers: {
-                    "Accept": "application/json"
-                },
-                cache: "no-store"
-            });
-
-            if (respuesta.status === 401) {
-                throw new Error(
-                    "Tu sesión ha expirado. Inicia sesión nuevamente."
-                );
-            }
-
-            if (respuesta.status === 403) {
-                throw new Error(
-                    "No tienes autorización para consultar estos datos."
-                );
-            }
-
-            if (respuesta.status === 502 ||
-                respuesta.status === 504) {
-                throw new Error(
-                    "No se pudo establecer comunicación con la API."
-                );
-            }
-
-            if (!respuesta.ok) {
-                throw new Error(
-                    "Error al consultar los datos. Código HTTP: " +
-                    respuesta.status
-                );
-            }
-
-            return await respuesta.json();
-        }
-
-        // ============================================
-        // NORMALIZAR RESPUESTAS
-        // ============================================
-
-        function obtenerLista(resultado) {
-            if (Array.isArray(resultado)) {
-                return resultado;
-            }
-
-            if (resultado &&
-                Array.isArray(resultado.value)) {
-                return resultado.value;
-            }
-
-            throw new Error(
-                "El servidor devolvió un formato de datos inesperado."
-            );
-        }
-
-        function obtenerNumero(valor) {
-            const numero = Number(valor);
-
-            return Number.isFinite(numero) ? numero : 0;
-        }
-
-        // ============================================
-        // CLASIFICACIÓN HISTÓRICA
-        // ============================================
-
-        // Clasificación relativa a las salidas acumuladas
-        // del conjunto de productos analizados.
-        function clasificarDemanda(unidades, maximoSalidas) {
-            if (unidades <= 0) {
-                return {
-                    texto: "Sin salidas",
-                    clase: "bg-secondary"
-                };
-            }
-
-            if (maximoSalidas <= 0) {
-                return {
-                    texto: "Sin salidas",
-                    clase: "bg-secondary"
-                };
-            }
-
-            const proporcion = unidades / maximoSalidas;
-
-            if (proporcion >= 0.70) {
-                return {
-                    texto: "Alta",
-                    clase: "bg-danger"
-                };
-            }
-
-            if (proporcion >= 0.30) {
-                return {
-                    texto: "Media",
-                    clase: "bg-warning text-dark"
-                };
-            }
-
-            return {
-                texto: "Baja",
-                clase: "bg-success"
-            };
-        }
-
-        // ============================================
-        // ESTADO DE CARGA
-        // ============================================
-
-        function cambiarEstadoCarga(activo) {
-            const boton = document.getElementById("botonActualizar");
-
-            boton.disabled = activo;
-
-            boton.textContent = activo
-                ? "Actualizando..."
-                : "Actualizar análisis";
-        }
-
-        function mostrarFilaInformativa(tabla, columnas, texto) {
-            const fila = tabla.insertRow();
-            const celda = fila.insertCell();
-
-            celda.colSpan = columnas;
-            celda.className = "text-center text-secondary";
-            celda.textContent = texto;
-        }
-
-        // ============================================
-        // ANÁLISIS PRINCIPAL
-        // ============================================
-
-        async function cargarDemanda() {
-            if (cargando) {
-                return;
-            }
-
-            cargando = true;
-            cambiarEstadoCarga(true);
-            limpiarMensaje();
-
-            try {
-                // Consultas autenticadas mediante el proxy.
-                const [
-                    resultadoProductos,
-                    resultadoMovimientos
-                ] = await Promise.all([
-                    consultarApi(apiProductos),
-                    consultarApi(apiMovimientos)
-                ]);
-
-                const productos = obtenerLista(resultadoProductos);
-                const movimientos = obtenerLista(resultadoMovimientos);
-
-                // ====================================
-                // RESUMEN POR PRODUCTO
-                // ====================================
-
-                const resumen = productos.map(producto => {
-                    const movimientosProducto = movimientos.filter(
-                        movimiento =>
-                            Number(movimiento.productoId) ===
-                            Number(producto.id)
-                    );
-
-                    const salidas = movimientosProducto.filter(
-                        movimiento =>
-                            String(movimiento.tipo || "")
-                                .trim()
-                                .toUpperCase() === "SALIDA"
-                    );
-
-                    const unidadesSalida = salidas.reduce(
-                        (total, movimiento) =>
-                            total + obtenerNumero(movimiento.cantidad),
-                        0
-                    );
-
-                    return {
-                        producto: producto,
-                        cantidadSalidas: salidas.length,
-                        unidadesSalida: unidadesSalida,
-                        stock: obtenerNumero(producto.stockActual),
-                        minimo: obtenerNumero(producto.stockMinimo)
-                    };
-                });
-
-                // ====================================
-                // INDICADORES GENERALES
-                // ====================================
-
-                const totalUnidades = resumen.reduce(
-                    (total, item) => total + item.unidadesSalida,
-                    0
-                );
-
-                const conSalidas = resumen.filter(
-                    item => item.cantidadSalidas > 0
-                ).length;
-
-                const bajos = resumen.filter(
-                    item => item.stock < item.minimo
-                ).length;
-
-                const maximoSalidas = resumen.reduce(
-                    (maximo, item) =>
-                        Math.max(maximo, item.unidadesSalida),
-                    0
-                );
-
-                document.getElementById("totalProductos").textContent =
-                    productos.length;
-
-                document.getElementById("totalSalidas").textContent =
-                    totalUnidades;
-
-                document.getElementById("productosConSalidas").textContent =
-                    conSalidas;
-
-                document.getElementById("productosBajos").textContent =
-                    bajos;
-
-                // ====================================
-                // TABLA DE DEMANDA
-                // ====================================
-
-                const tablaDemanda =
-                    document.getElementById("tablaDemanda");
-
-                tablaDemanda.replaceChildren();
-
-                resumen.sort(
-                    (a, b) => b.unidadesSalida - a.unidadesSalida
-                );
-
-                if (resumen.length === 0) {
-                    mostrarFilaInformativa(
-                        tablaDemanda,
-                        5,
-                        "No hay productos para analizar."
-                    );
-                }
-
-                resumen.forEach(item => {
-                    const fila = tablaDemanda.insertRow();
-
-                    const participacion = totalUnidades > 0
-                        ? (item.unidadesSalida / totalUnidades) * 100
-                        : 0;
-
-                    const nivel = clasificarDemanda(
-                        item.unidadesSalida,
-                        maximoSalidas
-                    );
-
-                    const valores = [
-                        item.producto.nombre || "Sin nombre",
-                        item.cantidadSalidas,
-                        item.unidadesSalida
-                    ];
-
-                    valores.forEach(valor => {
-                        fila.insertCell().textContent = valor;
-                    });
-
-                    const celdaParticipacion = fila.insertCell();
-
-                    celdaParticipacion.textContent =
-                        participacion.toFixed(1) + "%";
-
-                    const celdaNivel = fila.insertCell();
-
-                    const etiqueta = document.createElement("span");
-
-                    etiqueta.className = "badge " + nivel.clase;
-                    etiqueta.textContent = nivel.texto;
-
-                    celdaNivel.appendChild(etiqueta);
-                });
-
-                // ====================================
-                // PLAN DE REPOSICIÓN
-                // ====================================
-
-                const tablaReposicion =
-                    document.getElementById("tablaReposicion");
-
-                tablaReposicion.replaceChildren();
-
-                if (resumen.length === 0) {
-                    mostrarFilaInformativa(
-                        tablaReposicion,
-                        5,
-                        "No hay productos para analizar."
-                    );
-                }
-
-                resumen
-                    .slice()
-                    .sort((a, b) =>
-                        (b.minimo - b.stock) -
-                        (a.minimo - a.stock)
-                    )
-                    .forEach(item => {
-                        const fila = tablaReposicion.insertRow();
-
-                        const sugeridas = Math.max(
-                            0,
-                            item.minimo - item.stock
-                        );
-
-                        const valores = [
-                            item.producto.nombre || "Sin nombre",
-                            item.stock,
-                            item.minimo,
-                            sugeridas
-                        ];
-
-                        valores.forEach(valor => {
-                            fila.insertCell().textContent = valor;
-                        });
-
-                        const celdaEstado = fila.insertCell();
-                        const etiqueta = document.createElement("span");
-
-                        if (item.stock < item.minimo) {
-                            etiqueta.className = "badge bg-danger";
-                            etiqueta.textContent = "Stock bajo";
-                        } else {
-                            etiqueta.className = "badge bg-success";
-                            etiqueta.textContent = "Stock suficiente";
-                        }
-
-                        celdaEstado.appendChild(etiqueta);
-                    });
-
-            } catch (error) {
-                mostrarError(
-                    error.message ||
-                    "No se pudo completar el análisis de demanda."
-                );
-
-                // Evitar mostrar indicadores anteriores como si
-                // correspondieran a una consulta exitosa.
-                [
-                    "totalProductos",
-                    "totalSalidas",
-                    "productosConSalidas",
-                    "productosBajos"
-                ].forEach(id => {
-                    document.getElementById(id).textContent = "—";
-                });
-
-                const tablaDemanda =
-                    document.getElementById("tablaDemanda");
-
-                const tablaReposicion =
-                    document.getElementById("tablaReposicion");
-
-                tablaDemanda.replaceChildren();
-                tablaReposicion.replaceChildren();
-
-                mostrarFilaInformativa(
-                    tablaDemanda,
-                    5,
-                    "No se pudo cargar el análisis."
-                );
-
-                mostrarFilaInformativa(
-                    tablaReposicion,
-                    5,
-                    "No se pudo cargar el plan de reposición."
-                );
-
-            } finally {
-                cargando = false;
-                cambiarEstadoCarga(false);
-            }
-        }
-
-        // Ejecutar al abrir la página.
-        cargarDemanda();
-    </script>
+    <script src="~/js/demanda.js" asp-append-version="true"></script>
 }

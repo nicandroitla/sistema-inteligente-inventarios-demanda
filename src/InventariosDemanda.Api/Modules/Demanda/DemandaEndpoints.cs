@@ -1,5 +1,4 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace InventariosDemanda.Api.Modules.Demanda;
 
@@ -9,7 +8,17 @@ public static class DemandaEndpoints
         this IEndpointRouteBuilder app)
     {
         var grupo = app.MapGroup("/api/demanda")
-            .WithTags("Demanda");
+            .WithTags("Demanda")
+            .RequireAuthorization();
+
+        grupo.MapGet("/predicciones", async (
+            DemandaService servicio) =>
+        {
+            var predicciones =
+                await servicio.ObtenerPrediccionesAsync();
+
+            return Results.Ok(predicciones);
+        });
 
         grupo.MapGet("/", async (DemandaService servicio) =>
         {
@@ -24,7 +33,10 @@ public static class DemandaEndpoints
             var demanda = await servicio.ObtenerPorIdAsync(id);
 
             return demanda is null
-                ? Results.NotFound(new { mensaje = "Estimación no encontrada." })
+                ? Results.NotFound(new
+                {
+                    mensaje = "Estimacion no encontrada."
+                })
                 : Results.Ok(demanda);
         });
 
@@ -42,7 +54,10 @@ public static class DemandaEndpoints
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { mensaje = ex.Message });
+                return Results.BadRequest(new
+                {
+                    mensaje = ex.Message
+                });
             }
         });
 
