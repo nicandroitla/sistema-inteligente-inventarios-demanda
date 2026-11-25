@@ -1,0 +1,270 @@
+﻿@page
+@model ReportesModel
+@{
+    ViewData["Title"] = "Centro de reportes";
+}
+
+<link rel="stylesheet" href="~/css/reportes.css" asp-append-version="true" />
+
+<div class="pro-reportes">
+
+    <div class="rp-header rp-no-print">
+        <div>
+            <h1>Centro de reportes</h1>
+            <p>
+                Generación de informes y análisis inteligente del inventario.
+            </p>
+        </div>
+
+        <button type="button"
+                id="btnActualizarReporte"
+                class="btn btn-primary">
+            Actualizar datos
+        </button>
+    </div>
+
+    <div id="mensajeReporte"
+         class="alert rp-no-print"
+         role="status"
+         aria-live="polite"
+         hidden>
+    </div>
+
+    <div class="rp-types rp-no-print">
+
+        <button type="button"
+                class="rp-type rp-inventario active"
+                data-reporte="inventario"
+                aria-pressed="true">
+            <span class="rp-type-icon" aria-hidden="true">▤</span>
+            <strong>Inventario</strong>
+            <small>Existencias y valoración</small>
+        </button>
+
+        <button type="button"
+                class="rp-type rp-movimientos"
+                data-reporte="movimientos"
+                aria-pressed="false">
+            <span class="rp-type-icon" aria-hidden="true">⇄</span>
+            <strong>Movimientos</strong>
+            <small>Entradas y salidas</small>
+        </button>
+
+        <button type="button"
+                class="rp-type rp-demanda"
+                data-reporte="demanda"
+                aria-pressed="false">
+            <span class="rp-type-icon" aria-hidden="true">⌁</span>
+            <strong>Demanda</strong>
+            <small>Proyecciones de consumo</small>
+        </button>
+
+        <button type="button"
+                class="rp-type rp-alertas"
+                data-reporte="alertas"
+                aria-pressed="false">
+            <span class="rp-type-icon" aria-hidden="true">△</span>
+            <strong>Alertas</strong>
+            <small>Riesgos y prioridades</small>
+        </button>
+
+        <button type="button"
+                class="rp-type rp-reposicion"
+                data-reporte="reposicion"
+                aria-pressed="false">
+            <span class="rp-type-icon" aria-hidden="true">▥</span>
+            <strong>Reposición</strong>
+            <small>Plan de abastecimiento</small>
+        </button>
+
+    </div>
+
+    <section class="rp-panel rp-no-print">
+
+        <h2>Configuración del reporte</h2>
+
+        <p class="rp-description">
+            Personaliza la información que deseas consultar y exportar.
+        </p>
+
+        <div class="rp-filters">
+
+            <div>
+                <label for="buscarReporte">
+                    Buscar producto
+                </label>
+
+                <input type="search"
+                       id="buscarReporte"
+                       class="form-control"
+                       placeholder="Nombre del producto..."
+                       autocomplete="off" />
+            </div>
+
+            <div>
+                <label for="filtroCategoria">
+                    Categoría
+                </label>
+
+                <select id="filtroCategoria"
+                        class="form-select">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filtroEstado" id="labelFiltroEstado">
+                    Estado
+                </label>
+
+                <select id="filtroEstado"
+                        class="form-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div id="filtrosFecha"
+             class="rp-date-filters"
+             hidden>
+
+            <div>
+                <label for="fechaDesde">Fecha desde</label>
+
+                <input type="date"
+                       id="fechaDesde"
+                       class="form-control" />
+            </div>
+
+            <div>
+                <label for="fechaHasta">Fecha hasta</label>
+
+                <input type="date"
+                       id="fechaHasta"
+                       class="form-control" />
+            </div>
+
+        </div>
+
+        <div class="rp-toolbar">
+
+            <span id="contadorRegistros"
+                  class="rp-counter"
+                  aria-live="polite">
+                0 registros
+            </span>
+
+            <button type="button"
+                    id="btnLimpiarFiltros"
+                    class="btn btn-outline-secondary">
+                Limpiar filtros
+            </button>
+
+        </div>
+
+    </section>
+
+    <section class="rp-panel" id="vistaReporte">
+
+        <div class="rp-toolbar">
+
+            <div>
+                <h2 id="tituloReporte">
+                    Reporte de inventario
+                </h2>
+
+                <p id="descripcionReporte"
+                   class="rp-description">
+                    Existencias actuales y valor del inventario.
+                </p>
+            </div>
+
+            <div class="rp-actions rp-no-print">
+
+                <button type="button"
+                        id="btnExportarCsv"
+                        class="btn btn-success"
+                        disabled>
+                    Exportar CSV
+                </button>
+
+                <button type="button"
+                        id="btnImprimirReporte"
+                        class="btn btn-outline-primary"
+                        disabled>
+                    Imprimir / PDF
+                </button>
+
+            </div>
+
+        </div>
+
+        <div id="resumenReporte"
+             class="rp-summary"
+             aria-live="polite">
+        </div>
+
+        <div class="rp-table-wrap">
+
+            <table class="rp-table"
+                   aria-labelledby="tituloReporte">
+
+                <thead id="encabezadoReporte">
+                </thead>
+
+                <tbody id="tablaReporte">
+                    <tr>
+                        <td class="rp-empty">
+                            Cargando información...
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="rp-meta">
+
+            <div>
+                <strong>Fecha de generación:</strong>
+                <span id="fechaGeneracion">Pendiente</span>
+            </div>
+
+            <div>
+                <strong>Período analizado:</strong>
+                <span id="periodoReporte">Pendiente</span>
+            </div>
+
+            <div>
+                <strong>Registros incluidos:</strong>
+                <span id="totalRegistrosReporte">0</span>
+            </div>
+
+            <div>
+                <strong>Filtros aplicados:</strong>
+                <span id="detalleFiltros">Ninguno</span>
+            </div>
+
+            <div>
+                <strong>Fuente:</strong>
+                Sistema Inteligente de Inventarios y Demanda.
+            </div>
+
+        </div>
+
+        <div id="notaReporte" class="rp-note">
+            Los reportes se generan utilizando la información
+            disponible en el sistema. Las proyecciones de demanda
+            son estimaciones y los valores de reposición se calculan
+            utilizando el precio registrado de cada producto.
+        </div>
+
+    </section>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/reportes.js" asp-append-version="true"></script>
+}

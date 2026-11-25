@@ -19,6 +19,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Movimientos");
     options.Conventions.AuthorizePage("/Demanda");
     options.Conventions.AuthorizePage("/Alertas");
+    options.Conventions.AuthorizePage("/Reportes");
 
     options.Conventions.AllowAnonymousToPage("/Login");
     options.Conventions.AllowAnonymousToPage("/Registro");
@@ -563,4 +564,5 @@ app.MapGet("/api-proxy/demanda/predicciones", async (
 .RequireAuthorization();
 
 app.Run();
+
 

@@ -66,6 +66,14 @@
                         <span>Alertas</span>
                     </a>
 
+                    <a asp-page="/Reportes"
+                       class="sidebar-link @(currentPage == "/Reportes" ? "active" : "")"
+                       aria-current="@(currentPage == "/Reportes" ? "page" : null)">
+                        <span class="menu-icon" aria-hidden="true">▥</span>
+                        <span>Reportes</span>
+                    </a>
+
+                    
                     <a asp-page="/Logout"
                        class="sidebar-link @(currentPage == "/Logout" ? "active" : "")">
                         <span class="menu-icon" aria-hidden="true">⇥</span>
@@ -143,3 +151,4 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
