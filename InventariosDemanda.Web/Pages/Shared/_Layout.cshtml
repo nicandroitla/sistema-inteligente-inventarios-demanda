@@ -17,7 +17,15 @@
     }
 
     <div class="app-container">
-        <aside class="sidebar">
+        <aside class="sidebar" id="appSidebar" aria-label="Menu lateral">
+            <button type="button"
+                    id="sidebarClose"
+                    class="sidebar-close"
+                    aria-label="Cerrar menu"
+                    hidden>
+                <span aria-hidden="true">&times;</span>
+            </button>
+
             <a asp-page="/Index" class="sidebar-brand">
                 <span class="brand-icon">I</span>
                 <span class="brand-copy">
@@ -114,8 +122,26 @@
             </div>
         </aside>
 
+        <div id="sidebarOverlay"
+             class="sidebar-overlay"
+             aria-hidden="true"
+             hidden>
+        </div>
+
         <div class="workspace">
             <header class="topbar">
+                <button type="button"
+                        id="sidebarToggle"
+                        class="sidebar-toggle"
+                        aria-label="Abrir menu"
+                        aria-controls="appSidebar"
+                        aria-expanded="false"
+                        hidden>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </button>
+
                 <div class="topbar-heading">
                     <span class="topbar-eyebrow">PLATAFORMA DE GESTIÓN</span>
                     <span class="topbar-title">Panel de inventario</span>
@@ -151,4 +177,5 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
 
