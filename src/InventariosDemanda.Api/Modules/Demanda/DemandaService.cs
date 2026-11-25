@@ -58,7 +58,7 @@ public class DemandaService
 
 
     // Motor estadistico de prediccion de demanda.
-    public async Task<object> ObtenerPrediccionesAsync()
+    public async Task<ResumenPrediccionesDto> ObtenerPrediccionesAsync()
     {
         const int diasHistorial = 30;
 
@@ -163,34 +163,34 @@ public class DemandaService
             ? resumen.Max(p => p.unidadesSalida)
             : 0;
 
-        var predicciones = resumen.Select(p => new
+        var predicciones = resumen.Select(p => new PrediccionProductoDto
         {
-            p.productoId,
-            p.producto,
-            p.categoria,
-            p.stockActual,
-            p.stockMinimo,
-            p.stockMaximo,
-            p.movimientosSalida,
-            p.unidadesSalida,
-            p.promedioDiario,
-            p.demanda7Dias,
-            p.demanda15Dias,
-            p.demanda30Dias,
-            p.diasCobertura,
-            p.stockObjetivo,
-            p.reposicionSugerida,
-            p.demandaNoCubierta,
-            p.costoReposicion,
-            p.estado,
-            p.tieneSalidas,
+            ProductoId = p.productoId,
+            Producto = p.producto,
+            Categoria = p.categoria,
+            StockActual = p.stockActual,
+            StockMinimo = p.stockMinimo,
+            StockMaximo = p.stockMaximo,
+            MovimientosSalida = p.movimientosSalida,
+            UnidadesSalida = p.unidadesSalida,
+            PromedioDiario = p.promedioDiario,
+            Demanda7Dias = p.demanda7Dias,
+            Demanda15Dias = p.demanda15Dias,
+            Demanda30Dias = p.demanda30Dias,
+            DiasCobertura = p.diasCobertura,
+            StockObjetivo = p.stockObjetivo,
+            ReposicionSugerida = p.reposicionSugerida,
+            DemandaNoCubierta = p.demandaNoCubierta,
+            CostoReposicion = p.costoReposicion,
+            Estado = p.estado,
+            TieneSalidas = p.tieneSalidas,
 
-            participacion = totalSalidas > 0
+            Participacion = totalSalidas > 0
                 ? Math.Round(
                     p.unidadesSalida * 100m / totalSalidas, 1)
                 : 0m,
 
-            nivelDemanda = p.unidadesSalida == 0
+            NivelDemanda = p.unidadesSalida == 0
                 ? "Sin salidas"
                 : p.unidadesSalida >= maximoSalidas * 0.70m
                     ? "Alta"
@@ -200,50 +200,48 @@ public class DemandaService
         })
         .ToList();
 
-        return new
+        return new ResumenPrediccionesDto
         {
-            metodo = "Promedio diario historico",
-            diasHistorial,
-            fechaDesde = desde,
-            fechaHasta = hasta.AddDays(-1),
-            fechaAnalisis = DateTimeOffset.Now,
+            Metodo = "Promedio diario historico",
+            DiasHistorial = diasHistorial,
+            FechaDesde = desde,
+            FechaHasta = hasta.AddDays(-1),
+            FechaAnalisis = DateTimeOffset.Now,
 
-            totalProductos = resumen.Count,
-            totalSalidas,
+            TotalProductos = resumen.Count,
+            TotalSalidas = totalSalidas,
 
-            productosConSalidas =
+            ProductosConSalidas =
                 resumen.Count(p => p.tieneSalidas),
 
-            productosSinSalidas =
+            ProductosSinSalidas =
                 resumen.Count(p => !p.tieneSalidas),
 
-            productosRequierenReposicion =
+            ProductosRequierenReposicion =
                 resumen.Count(p => p.reposicionSugerida > 0),
 
-            productosEnRiesgo =
+            ProductosEnRiesgo =
                 resumen.Count(p =>
                     p.stockActual <= 0 ||
                     (p.diasCobertura.HasValue &&
                      p.diasCobertura.Value <= 7)),
 
-            demandaTotal7Dias =
+            DemandaTotal7Dias =
                 resumen.Sum(p => p.demanda7Dias),
 
-            demandaTotal15Dias =
+            DemandaTotal15Dias =
                 resumen.Sum(p => p.demanda15Dias),
 
-            demandaTotal30Dias =
+            DemandaTotal30Dias =
                 resumen.Sum(p => p.demanda30Dias),
 
-            totalUnidadesReposicion =
+            TotalUnidadesReposicion =
                 resumen.Sum(p => p.reposicionSugerida),
 
-            costoTotalReposicion =
+            CostoTotalReposicion =
                 resumen.Sum(p => p.costoReposicion),
 
-            predicciones
+            Predicciones = predicciones
         };
     }
-
 }
-

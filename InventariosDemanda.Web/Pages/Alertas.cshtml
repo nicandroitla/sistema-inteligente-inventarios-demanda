@@ -1,300 +1,257 @@
 ﻿@page
 @{
-    ViewData["Title"] = "Alertas de inventario";
+    ViewData["Title"] = "Alertas inteligentes";
 }
 
-<div class="container-fluid py-4">
+<link rel="stylesheet"
+      href="~/css/alertas.css"
+      asp-append-version="true" />
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="pro-alertas">
+
+    <div class="al-header">
         <div>
-            <h1 class="h3 fw-bold mb-1">Alertas de inventario</h1>
-            <p class="text-secondary mb-0">
-                Identifica productos agotados o con existencias por debajo del mínimo.
-            </p>
+            <h1>Alertas inteligentes</h1>
+            <p>Monitoreo preventivo y control de riesgos del inventario.</p>
         </div>
 
         <button id="botonActualizar"
-                class="btn btn-outline-secondary"
-                type="button"
-                onclick="cargarAlertas()">
+                class="btn btn-outline-primary"
+                type="button">
             Actualizar alertas
         </button>
     </div>
 
-    <div id="mensaje" class="alert d-none" role="alert"></div>
+    <div id="mensaje"
+         class="alert d-none"
+         role="status"
+         aria-live="polite">
+    </div>
 
-    <!-- INDICADORES -->
-    <div class="row g-3 mb-4">
+    <!-- INDICADORES PRINCIPALES -->
 
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <p class="text-secondary mb-1">Productos agotados</p>
-                    <div id="totalAgotados"
-                         class="display-6 fw-bold text-danger">
-                        —
-                    </div>
-                </div>
-            </div>
+    <div class="al-kpi-grid">
+
+        <div class="al-kpi al-blue">
+            <div class="al-kpi-label">Alertas activas</div>
+            <div id="totalAlertas" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Productos que requieren atencion</div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <p class="text-secondary mb-1">Productos con stock bajo</p>
-                    <div id="totalStockBajo"
-                         class="display-6 fw-bold text-warning">
-                        —
-                    </div>
-                </div>
-            </div>
+        <div class="al-kpi al-red">
+            <div class="al-kpi-label">Productos agotados</div>
+            <div id="totalAgotados" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Prioridad critica</div>
+        </div>
+
+        <div class="al-kpi al-orange">
+            <div class="al-kpi-label">Stock bajo</div>
+            <div id="totalStockBajo" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Existencias en el limite minimo</div>
+        </div>
+
+        <div class="al-kpi al-red">
+            <div class="al-kpi-label">Riesgo de agotamiento</div>
+            <div id="totalRiesgoAgotamiento" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Alerta principal por cobertura de hasta 7 dias</div>
+        </div>
+
+        <div class="al-kpi al-yellow">
+            <div class="al-kpi-label">Reposicion preventiva</div>
+            <div id="totalReposicionPreventiva" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Abastecimiento anticipado</div>
+        </div>
+
+        <div class="al-kpi al-purple">
+            <div class="al-kpi-label">Exceso de stock</div>
+            <div id="totalExcesoStock" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Existencias superiores al maximo</div>
+        </div>
+
+        <div class="al-kpi al-cyan">
+            <div class="al-kpi-label">Unidades a reponer</div>
+            <div id="totalUnidadesReposicion" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Cantidad total recomendada</div>
+        </div>
+
+        <div class="al-kpi al-green">
+            <div class="al-kpi-label">Productos sin alertas</div>
+            <div id="productosSinAlertas" class="al-kpi-value">—</div>
+            <div class="al-kpi-detail">Sin alertas segun las reglas actuales</div>
         </div>
 
     </div>
 
-    <!-- PRODUCTOS AGOTADOS -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+    <!-- DISTRIBUCION POR PRIORIDAD -->
 
-            <h2 class="h5 fw-bold text-danger mb-3">
-                Productos agotados
-            </h2>
+    <section class="al-panel">
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Categoría</th>
-                            <th>Stock actual</th>
-                            <th>Stock mínimo</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
+        <h2>Distribucion por prioridad</h2>
 
-                    <tbody id="tablaAgotados">
-                        <tr>
-                            <td colspan="5"
-                                class="text-center text-secondary">
-                                Cargando datos...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <p class="al-description">
+            Clasificacion de las alertas segun su nivel de importancia.
+        </p>
+
+        <div id="graficoPrioridades">
+            <div class="al-empty">
+                Cargando distribucion de alertas...
             </div>
-
         </div>
+
+    </section>
+
+    <!-- METODO DE ANALISIS -->
+
+    <div class="al-method">
+
+        <strong>Motor de alertas inteligentes</strong>
+
+        <div class="mt-2">
+            Las alertas se generan utilizando las existencias actuales,
+            los limites de inventario y las predicciones de demanda
+            basadas en el consumo historico.
+        </div>
+
+        <div id="periodoAnalisis" class="mt-2">
+            Consultando periodo de analisis...
+        </div>
+
     </div>
 
-    <!-- PRODUCTOS CON STOCK BAJO -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
+    <!-- CENTRO DE ALERTAS -->
 
-            <h2 class="h5 fw-bold text-warning mb-3">
-                Productos con stock bajo
-            </h2>
+    <section class="al-panel">
 
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Categoría</th>
-                            <th>Stock actual</th>
-                            <th>Stock mínimo</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
+        <h2>Centro de alertas</h2>
 
-                    <tbody id="tablaStockBajo">
-                        <tr>
-                            <td colspan="5"
-                                class="text-center text-secondary">
-                                Cargando datos...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <p class="al-description">
+            Consulta los productos que requieren atencion y sus
+            recomendaciones de abastecimiento.
+        </p>
+
+        <div class="al-filters">
+
+            <div>
+                <label for="buscarProducto" class="form-label">
+                    Buscar producto
+                </label>
+
+                <input id="buscarProducto"
+                       type="search"
+                       class="form-control"
+                       placeholder="Nombre o categoria..." />
+            </div>
+
+            <div>
+                <label for="filtroTipo" class="form-label">
+                    Tipo de alerta
+                </label>
+
+                <select id="filtroTipo" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    <option value="Agotado">Agotado</option>
+                    <option value="Stock bajo">Stock bajo</option>
+                    <option value="Riesgo de agotamiento">
+                        Riesgo de agotamiento
+                    </option>
+                    <option value="Reposicion preventiva">
+                        Reposicion preventiva
+                    </option>
+                    <option value="Exceso de stock">
+                        Exceso de stock
+                    </option>
+                </select>
+            </div>
+
+            <div>
+                <label for="filtroPrioridad" class="form-label">
+                    Prioridad
+                </label>
+
+                <select id="filtroPrioridad" class="form-select">
+                    <option value="">Todas las prioridades</option>
+                    <option value="Critica">Critica</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Media">Media</option>
+                    <option value="Informativa">Informativa</option>
+                </select>
             </div>
 
         </div>
+
+        <div class="al-toolbar">
+
+            <span id="contadorAlertas"
+                  class="al-counter"
+                  aria-live="polite">
+                Consultando alertas...
+            </span>
+
+            <button id="btnLimpiarFiltros"
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary">
+                Limpiar filtros
+            </button>
+
+        </div>
+
+        <div id="listaAlertas" class="al-alert-list">
+
+            <div class="al-empty">
+                Cargando alertas del inventario...
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- INFORMACION COMPLEMENTARIA -->
+
+    <section class="al-panel">
+
+        <h2>Consideraciones del analisis</h2>
+
+        <p class="al-description mb-2">
+            Las recomendaciones se calculan automaticamente
+            a partir de la informacion registrada en el sistema.
+        </p>
+
+        <ul class="text-secondary small mb-0">
+            <li>
+                Cada producto presenta una alerta principal
+                para evitar duplicidades.
+            </li>
+
+            <li>
+                Las predicciones son estimaciones y no garantizan
+                el comportamiento futuro de la demanda.
+            </li>
+
+            <li>
+                La ausencia de salidas historicas no implica
+                ausencia de demanda futura.
+            </li>
+
+            <li>
+                El valor referencial de reposicion utiliza
+                los precios registrados en el inventario.
+            </li>
+
+            <li>
+                Las alertas se recalculan al consultar
+                o actualizar este modulo.
+            </li>
+        </ul>
+
+    </section>
+
+    <div id="ultimaActualizacion" class="al-footer">
+        Ultima actualizacion: pendiente
     </div>
 
 </div>
 
 @section Scripts {
-    <script>
-        // Proxy autenticado de Supabase.
-        const apiAlertas = "/api-proxy/alertas";
-
-        let cargando = false;
-
-        function mostrarMensaje(texto, tipo) {
-            const mensaje = document.getElementById("mensaje");
-            mensaje.textContent = texto;
-            mensaje.className = `alert alert-${tipo}`;
-        }
-
-        function limpiarMensaje() {
-            const mensaje = document.getElementById("mensaje");
-            mensaje.textContent = "";
-            mensaje.className = "alert d-none";
-        }
-
-        function mostrarFilaVacia(tabla, texto) {
-            const fila = tabla.insertRow();
-            const celda = fila.insertCell();
-
-            celda.colSpan = 5;
-            celda.className = "text-center text-secondary";
-            celda.textContent = texto;
-        }
-
-        function crearFila(producto, tabla) {
-            const fila = tabla.insertRow();
-
-            const valores = [
-                producto.nombre ?? producto.Nombre ?? "",
-                producto.categoria ?? producto.Categoria ?? "",
-                producto.stockActual ?? producto.StockActual ?? 0,
-                producto.stockMinimo ?? producto.StockMinimo ?? 0,
-                producto.mensaje ?? producto.Mensaje ?? ""
-            ];
-
-            valores.forEach((valor, indice) => {
-                const celda = fila.insertCell();
-                celda.textContent = valor;
-
-                if (indice === 4) {
-                    celda.className =
-                        String(valor).toLowerCase().includes("agotado")
-                            ? "text-danger fw-semibold"
-                            : "text-warning fw-semibold";
-                }
-            });
-        }
-
-        function mostrarProductos(productos, idTabla, mensajeVacio) {
-            const tabla = document.getElementById(idTabla);
-            tabla.replaceChildren();
-
-            if (!Array.isArray(productos) || productos.length === 0) {
-                mostrarFilaVacia(tabla, mensajeVacio);
-                return;
-            }
-
-            productos.forEach(producto => crearFila(producto, tabla));
-        }
-
-        function cambiarEstadoCarga(activo) {
-            const boton = document.getElementById("botonActualizar");
-
-            boton.disabled = activo;
-            boton.textContent = activo
-                ? "Actualizando..."
-                : "Actualizar alertas";
-        }
-
-        async function cargarAlertas() {
-            if (cargando) {
-                return;
-            }
-
-            cargando = true;
-            cambiarEstadoCarga(true);
-            limpiarMensaje();
-
-            try {
-                const respuesta = await fetch(apiAlertas, {
-                    method: "GET",
-                    credentials: "same-origin",
-                    headers: {
-                        "Accept": "application/json"
-                    },
-                    cache: "no-store"
-                });
-
-                if (respuesta.status === 401) {
-                    throw new Error(
-                        "Tu sesión ha expirado. Inicia sesión nuevamente."
-                    );
-                }
-
-                if (respuesta.status === 403) {
-                    throw new Error(
-                        "No tienes autorización para consultar las alertas."
-                    );
-                }
-
-                if (respuesta.status === 502 ||
-                    respuesta.status === 504) {
-                    throw new Error(
-                        "No se pudo establecer comunicación con la API."
-                    );
-                }
-
-                if (!respuesta.ok) {
-                    throw new Error(
-                        "No se pudieron consultar las alertas. Código HTTP: " +
-                        respuesta.status
-                    );
-                }
-
-                const datos = await respuesta.json();
-
-                document.getElementById("totalAgotados").textContent =
-                    datos.totalAgotados ?? datos.TotalAgotados ?? 0;
-
-                document.getElementById("totalStockBajo").textContent =
-                    datos.totalStockBajo ?? datos.TotalStockBajo ?? 0;
-
-                mostrarProductos(
-                    datos.productosAgotados ?? datos.ProductosAgotados ?? [],
-                    "tablaAgotados",
-                    "No hay productos agotados."
-                );
-
-                mostrarProductos(
-                    datos.productosStockBajo ?? datos.ProductosStockBajo ?? [],
-                    "tablaStockBajo",
-                    "No hay productos con stock bajo."
-                );
-
-            } catch (error) {
-                mostrarMensaje(
-                    error.message ||
-                    "No se pudo completar la consulta de alertas.",
-                    "danger"
-                );
-
-                document.getElementById("totalAgotados").textContent = "—";
-                document.getElementById("totalStockBajo").textContent = "—";
-
-                const tablaAgotados =
-                    document.getElementById("tablaAgotados");
-
-                const tablaStockBajo =
-                    document.getElementById("tablaStockBajo");
-
-                tablaAgotados.replaceChildren();
-                tablaStockBajo.replaceChildren();
-
-                mostrarFilaVacia(
-                    tablaAgotados,
-                    "No se pudieron cargar los productos agotados."
-                );
-
-                mostrarFilaVacia(
-                    tablaStockBajo,
-                    "No se pudieron cargar los productos con stock bajo."
-                );
-
-            } finally {
-                cargando = false;
-                cambiarEstadoCarga(false);
-            }
-        }
-
-        cargarAlertas();
-    </script>
+    <script src="~/js/alertas.js"
+            asp-append-version="true"></script>
 }
