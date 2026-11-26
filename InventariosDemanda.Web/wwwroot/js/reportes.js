@@ -606,6 +606,10 @@ window.ReportesDatos = (() => {
             return moneda(valor);
         }
 
+        if (campo === "id") {
+            return String(valor);
+        }
+
         if (typeof valor === "number") {
             return formatoNumero.format(valor);
         }
@@ -1125,6 +1129,7 @@ window.ReportesDatos = (() => {
     cargarReporte();
 
 })();
+
 
 
 

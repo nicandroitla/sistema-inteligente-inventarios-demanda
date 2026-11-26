@@ -64,7 +64,7 @@ public class AlertaService
                         $"Gestionar reposicion urgente. Unidades sugeridas: {p.ReposicionSugerida}.",
 
                     "Stock bajo" =>
-                        $"Revisar existencias y reponer {p.ReposicionSugerida} unidades sugeridas.",
+                        $"Revisar existencias y reponer {p.ReposicionSugerida} {(p.ReposicionSugerida == 1 ? "unidad sugerida" : "unidades sugeridas")}.",
 
                     "Riesgo de agotamiento" =>
                         "Revisar la cobertura y planificar el abastecimiento.",
@@ -176,3 +176,4 @@ public class AlertaService
         };
     }
 }
+

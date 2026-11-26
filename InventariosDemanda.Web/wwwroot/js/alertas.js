@@ -133,7 +133,7 @@
                 crearElemento(
                     "strong",
                     "",
-                    `${numero(cantidad)} alertas (${numero(porcentaje)}%)`
+                    `${numero(cantidad)} ${cantidad === 1 ? "alerta" : "alertas"} (${numero(porcentaje)}%)`
                 )
             );
 
@@ -332,7 +332,7 @@
         lista.replaceChildren();
 
         $("contadorAlertas").textContent =
-            `Mostrando ${filtradas.length} de ${alertas.length} alertas`;
+            `Mostrando ${filtradas.length} de ${alertas.length} ${alertas.length === 1 ? "alerta" : "alertas"}`;
 
         if (filtradas.length === 0) {
             mostrarVacio(
@@ -581,3 +581,4 @@
 
     cargarAlertas();
 })();
+
